@@ -54,6 +54,7 @@ h2{font-size:13px;font-family:var(--mono);letter-spacing:.14em;text-transform:up
 .g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
 .g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
 .grid > *{min-width:0}
+.kw{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
 .note{border-radius:3px;padding:16px 18px;border:1px solid transparent;box-shadow:2px 3px 0 var(--shadow)}
 .note h3{margin:0 0 10px;font-size:15px;font-weight:700;letter-spacing:-.01em}
 .note ul{margin:0;padding-left:18px;font-size:14px}
@@ -204,7 +205,7 @@ flowchart LR
 </div>
 
 <h2>Keyword Categories</h2>
-<div class="grid g3">
+<div class="grid kw">
   <div class="note blue">
     <h3>1 · CaseType</h3>
     <span class="pill">CRIMINAL</span><span class="pill">ADMINISTRATIVE</span>
@@ -228,6 +229,7 @@ flowchart LR
   <div class="note red">
     <h3>5 · SecurityLevel</h3>
     <span class="pill">LOW</span><span class="pill">MEDIUM</span><span class="pill">HIGH</span>
+    <p style="margin-top:6px">Defaults to MEDIUM. HIGH means a cell of one's own (cell validation) and no work assignment (AssignJob_action).</p>
   </div>
   <div class="note red">
     <h3>6 · InmateStatus</h3>
