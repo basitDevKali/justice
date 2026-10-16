@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Justice Module</title>
+<style>
+/* Layout: same sticky-note board as the Driving School concept — one colour per context, foreign modules in stone. */
+:root{
+  --canvas:#F3F1EC; --dot:#D9D5CB;
+  --ink:#211F1C; --ink-soft:#5C574F; --rule:#D6D2C8; --shadow:rgba(33,31,28,.10); --codebg:rgba(33,31,28,.09);
+  --pre-bg:#211F1C; --pre-fg:#EDEAE2;
+  --blue:#C2DDF2; --blue-line:#3D7BAA; --blue-ink:#123A5A; --blue-soft:#E4F0FA; --blue-pill:#D5E8F7;
+  --red:#F3ADA3; --red-line:#A8412F; --red-ink:#6B1F16; --red-soft:#FBE6E2; --red-pill:#F7CFC8;
+  --yellow:#FADF93; --yellow-line:#B58A1C; --yellow-ink:#5E4206;
+  --teal:#AEDFCC; --teal-line:#2F7A62; --teal-ink:#144033; --teal-pill:#C6E9DA;
+  --stone:#E3DFD5; --stone-line:#B3AEA1; --stone-ink:#211F1C; --stone-pill:#EEEBE4;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --canvas:#1C1B19; --dot:#2E2C28;
+  --ink:#ECE8E0; --ink-soft:#A8A196; --rule:#3A3732; --shadow:rgba(0,0,0,.35); --codebg:rgba(236,232,224,.10);
+  --pre-bg:#111010; --pre-fg:#EDEAE2;
+  --blue:#1E3446; --blue-line:#6FA6D2; --blue-ink:#CFE4F5; --blue-soft:#172632; --blue-pill:#24425A;
+  --red:#4A231D; --red-line:#D9806F; --red-ink:#F8D5CE; --red-soft:#2F1915; --red-pill:#5A2A23;
+  --yellow:#45380F; --yellow-line:#D9B44A; --yellow-ink:#F7E7B5;
+  --teal:#183D31; --teal-line:#5FB496; --teal-ink:#CDEFE2; --teal-pill:#1F4C3D;
+  --stone:#2C2A26; --stone-line:#5A564E; --stone-ink:#ECE8E0; --stone-pill:#36332E;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --canvas:#1C1B19; --dot:#2E2C28;
+  --ink:#ECE8E0; --ink-soft:#A8A196; --rule:#3A3732; --shadow:rgba(0,0,0,.35); --codebg:rgba(236,232,224,.10);
+  --pre-bg:#111010; --pre-fg:#EDEAE2;
+  --blue:#1E3446; --blue-line:#6FA6D2; --blue-ink:#CFE4F5; --blue-soft:#172632; --blue-pill:#24425A;
+  --red:#4A231D; --red-line:#D9806F; --red-ink:#F8D5CE; --red-soft:#2F1915; --red-pill:#5A2A23;
+  --yellow:#45380F; --yellow-line:#D9B44A; --yellow-ink:#F7E7B5;
+  --teal:#183D31; --teal-line:#5FB496; --teal-ink:#CDEFE2; --teal-pill:#1F4C3D;
+  --stone:#2C2A26; --stone-line:#5A564E; --stone-ink:#ECE8E0; --stone-pill:#36332E;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--sans);line-height:1.55;
+  background-image:radial-gradient(circle,var(--dot) 1px,transparent 1px);background-size:26px 26px}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 16px 80px}
+header{margin-bottom:36px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.05;margin:6px 0 10px;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.sub{max-width:68ch;color:var(--ink-soft);font-size:15px;margin:0}
+h2{font-size:13px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
+  margin:44px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.grid > *{min-width:0}
+.note{border-radius:3px;padding:16px 18px;border:1px solid transparent;box-shadow:2px 3px 0 var(--shadow)}
+.note h3{margin:0 0 10px;font-size:15px;font-weight:700;letter-spacing:-.01em}
+.note ul{margin:0;padding-left:18px;font-size:14px}
+.note li{margin-bottom:5px}
+.note p{margin:0 0 8px;font-size:14px}
+.note .where{font-family:var(--mono);font-size:12px;opacity:.8;margin-bottom:8px}
+.note.blue{background:var(--blue);border-color:var(--blue-line);color:var(--blue-ink)}
+.note.red{background:var(--red);border-color:var(--red-line);color:var(--red-ink)}
+.note.yellow{background:var(--yellow);border-color:var(--yellow-line);color:var(--yellow-ink)}
+.note.teal{background:var(--teal);border-color:var(--teal-line);color:var(--teal-ink)}
+.note.stone{background:var(--stone);border-color:var(--stone-line);color:var(--stone-ink)}
+.tbl{border-radius:3px;padding:14px;box-shadow:2px 3px 0 var(--shadow)}
+.tbl.blue{background:var(--blue-soft);border:1px solid var(--blue-line)}
+.tbl.red{background:var(--red-soft);border:1px solid var(--red-line)}
+.tbl .cap{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;opacity:.75}
+.tbl h3{margin:0 0 12px;font-size:20px;font-weight:800;letter-spacing:-.02em}
+.tbl.blue h3,.tbl.blue .cap,.tbl.blue .hint{color:var(--blue-ink)}
+.tbl.red h3,.tbl.red .cap,.tbl.red .hint{color:var(--red-ink)}
+.row{display:grid;grid-template-columns:34px minmax(0,1fr) 128px;gap:6px;margin-bottom:6px;align-items:stretch}
+.key,.fld,.typ{border-radius:2px;padding:7px 9px;font-size:13px;display:flex;align-items:center;min-width:0}
+.fld{font-family:var(--mono);font-weight:600;letter-spacing:-.01em;overflow-wrap:anywhere}
+.fld small{font-weight:400;opacity:.75;margin-left:8px;font-size:11.5px}
+.typ{font-family:var(--mono);font-size:12px;justify-content:center}
+.blue .key,.blue .fld,.blue .typ{background:var(--blue);color:var(--blue-ink);border:1px solid var(--blue-line)}
+.red .key,.red .fld,.red .typ{background:var(--red);color:var(--red-ink);border:1px solid var(--red-line)}
+.row.ext .fld,.row.ext .key,.row.ext .typ{background:var(--stone);color:var(--stone-ink);border:1px dashed var(--stone-line)}
+.key{justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700}
+.key.empty{background:transparent!important;border:none!important}
+.m{font-size:15px;line-height:1}
+.hint{font-size:12px;font-family:var(--mono);opacity:.85;margin:10px 0 0}
+.pill{display:inline-block;border-radius:2px;padding:4px 9px;font-size:12.5px;font-family:var(--mono);margin:0 5px 5px 0;border:1px solid}
+.blue .pill{background:var(--blue-pill);border-color:var(--blue-line);color:var(--blue-ink)}
+.red .pill{background:var(--red-pill);border-color:var(--red-line);color:var(--red-ink)}
+.teal .pill{background:var(--teal-pill);border-color:var(--teal-line);color:var(--teal-ink)}
+.stone .pill{background:var(--stone-pill);border-color:var(--stone-line);color:var(--stone-ink)}
+code{font-family:var(--mono);font-size:.92em;background:var(--codebg);padding:1px 5px;border-radius:2px}
+pre{font-family:var(--mono);font-size:13px;background:var(--pre-bg);color:var(--pre-fg);padding:16px;border-radius:3px;overflow-x:auto;margin:0}
+pre.mermaid{background:var(--stone);color:var(--ink);border:1px solid var(--stone-line);text-align:center}
+.legend{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;font-family:var(--mono)}
+.swatch{display:inline-flex;align-items:center;gap:7px;background:var(--canvas);border:1px solid var(--rule);border-radius:2px;padding:5px 10px}
+.chip{width:15px;height:15px;border-radius:2px;display:inline-block;border:1px solid}
+.scroll{overflow-x:auto}
+table.ex{width:100%;border-collapse:collapse;font-size:13px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+table.ex th{text-align:left;font-weight:700;padding:7px 9px;border-bottom:1px solid currentColor;opacity:.85}
+table.ex td{padding:7px 9px;border-bottom:1px solid var(--rule);vertical-align:top}
+.note table.ex td{border-bottom-color:currentColor;border-bottom-style:dotted}
+table.ex tr.off td{opacity:.45;text-decoration:line-through}
+.num{text-align:right}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:2px;border:1px solid currentColor;opacity:.8;margin-left:6px;vertical-align:1px}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-soft)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Concept · Project Stadtverwaltung · Module of Basit</div>
+  <h1>Justice Module</h1>
+  <p class="sub">Two contexts, Court and Prison. A verdict in the Court creates the imprisonment in the Prison. Both contexts connect to the citizens and finances of Hannes's modules and to Jobs and Complaint Management in Julia's Operations &amp; Safety module.</p>
+</header>
+
+<h2>Legend</h2>
+<div class="legend">
+  <span class="swatch"><span class="chip" style="background:var(--blue);border-color:var(--blue-line)"></span> Context 1 · J_COURTCASE</span>
+  <span class="swatch"><span class="chip" style="background:var(--red);border-color:var(--red-line)"></span> Context 2 · J_INMATE</span>
+  <span class="swatch"><span class="chip" style="background:var(--stone);border-color:var(--stone-line);border-style:dashed"></span> Link to another module</span>
+  <span class="swatch"><span class="chip" style="background:var(--yellow);border-color:var(--yellow-line)"></span> Actions</span>
+  <span class="swatch"><span class="chip" style="background:var(--teal);border-color:var(--teal-line)"></span> Calculated Values</span>
+  <span class="swatch">💣 = Mandatory field</span>
+  <span class="swatch">PK / FK = Key</span>
+</div>
+
+<h2>Module Map</h2>
+<pre class="mermaid">
+flowchart LR
+  subgraph JUS["Justice · Basit"]
+    C["Court<br/>J_COURTCASE"]
+    P["Prison<br/>J_INMATE"]
+  end
+  subgraph HAN["Hannes"]
+    B["Bürger<br/>(citizen)"]
+    F["Finanzen<br/>(receivable)"]
+  end
+  subgraph JUL["Operations &amp; Safety · Julia"]
+    J["Jobs"]
+    K["Beschwerdemanagement<br/>(complaint)"]
+  end
+  C -- "1 case → n imprisonments" --> P
+  C -- "CITIZEN_ID (defendant)" --> B
+  P -- "CITIZEN_ID (inmate)" --> B
+  C -- "fine → RECEIVABLE_ID" --> F
+  K -- "escalation → COMPLAINT_ID" --> C
+  P -- "work assignment → JOB_ID" --> J
+  J -. "criminal record API" .-> C
+</pre>
+<p class="hint" style="color:var(--ink-soft)">Solid line = foreign key stored in the Justice tables. Dashed line = the other module calls a Justice API.</p>
+
+<h2>Tables</h2>
+<div class="grid g2">
+  <div class="tbl blue">
+    <div class="cap">Context 1 · Court (Gericht)</div>
+    <h3>J_COURTCASE</h3>
+    <div class="row"><div class="key">PK</div><div class="fld">J_COURTCASEID</div><div class="typ">CHAR(36)</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">CASENUMBER</div><div class="typ">VARCHAR(30)</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">TITLE</div><div class="typ">VARCHAR(255)</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">CASETYPE</div><div class="typ">VARCHAR(36)</div></div>
+    <div class="row ext"><div class="key">FK<br/>💣</div><div class="fld">CITIZEN_ID<small>→ Bürger</small></div><div class="typ">CHAR(36)</div></div>
+    <div class="row ext"><div class="key">FK</div><div class="fld">COMPLAINT_ID<small>→ Beschwerde</small></div><div class="typ">CHAR(36)</div></div>
+    <div class="row ext"><div class="key">FK</div><div class="fld">RECEIVABLE_ID<small>→ Finanzen</small></div><div class="typ">CHAR(36)</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">JUDGE</div><div class="typ">VARCHAR(36)</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">FILINGDATE</div><div class="typ">DATE</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">HEARINGDATE</div><div class="typ">DATETIME</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">STATUS</div><div class="typ">VARCHAR(36)</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">VERDICT</div><div class="typ">VARCHAR(36)</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">FINEAMOUNT</div><div class="typ">DECIMAL(10,2)</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">SENTENCEMONTHS</div><div class="typ">INT</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">DESCRIPTION</div><div class="typ">LONGTEXT</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">DATE_NEW</div><div class="typ">DATETIME</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">DATE_EDIT</div><div class="typ">DATETIME</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">USER_NEW</div><div class="typ">VARCHAR(30)</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">USER_EDIT</div><div class="typ">VARCHAR(30)</div></div>
+    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · FILINGDATE defaults to today · VERDICT, FINEAMOUNT, SENTENCEMONTHS and RECEIVABLE_ID are set only by PronounceVerdict_action (read-only in the EditView) · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID is filled when a case is escalated from Complaint Management · audit fields maintained automatically by ADITO.</p>
+  </div>
+
+  <div class="tbl red">
+    <div class="cap">Context 2 · Prison (Gefängnis)</div>
+    <h3>J_INMATE</h3>
+    <div class="row"><div class="key">PK</div><div class="fld">J_INMATEID</div><div class="typ">CHAR(36)</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">INMATENUMBER</div><div class="typ">VARCHAR(30)</div></div>
+    <div class="row"><div class="key">FK<br/>💣</div><div class="fld">J_COURTCASE_ID<small>→ Court</small></div><div class="typ">CHAR(36)</div></div>
+    <div class="row ext"><div class="key">FK<br/>💣</div><div class="fld">CITIZEN_ID<small>→ Bürger</small></div><div class="typ">CHAR(36)</div></div>
+    <div class="row ext"><div class="key">FK</div><div class="fld">JOB_ID<small>→ Jobs</small></div><div class="typ">CHAR(36)</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">CELL</div><div class="typ">VARCHAR(20)</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">SECURITYLEVEL</div><div class="typ">VARCHAR(36)</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">ADMISSIONDATE</div><div class="typ">DATE</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">PLANNEDRELEASEDATE</div><div class="typ">DATE</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">RELEASEDATE</div><div class="typ">DATE</div></div>
+    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">STATUS</div><div class="typ">VARCHAR(36)</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">DATE_NEW</div><div class="typ">DATETIME</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">DATE_EDIT</div><div class="typ">DATETIME</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">USER_NEW</div><div class="typ">VARCHAR(30)</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">USER_EDIT</div><div class="typ">VARCHAR(30)</div></div>
+    <p class="hint">One row = one imprisonment. A row is created only by PronounceVerdict_action (no "New" button in the FilterView) · INMATENUMBER generated on insert (<code>H-2026-0001</code>) · CITIZEN_ID is taken over from the court case and read-only · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY · RELEASEDATE set only by ReleaseInmate_action · JOB_ID set only by AssignJob_action · audit fields as in J_COURTCASE.</p>
+  </div>
+</div>
+
+<h2>Keyword Categories</h2>
+<div class="grid g3">
+  <div class="note blue">
+    <h3>1 · CaseType</h3>
+    <span class="pill">CRIMINAL</span><span class="pill">CIVIL</span><span class="pill">ADMINISTRATIVE</span>
+  </div>
+  <div class="note blue">
+    <h3>2 · CaseStatus</h3>
+    <span class="pill">FILED</span><span class="pill">HEARING_SCHEDULED</span><span class="pill">VERDICT</span><span class="pill">CLOSED</span><span class="pill">DISMISSED</span>
+  </div>
+  <div class="note blue">
+    <h3>3 · VerdictType</h3>
+    <span class="pill">ACQUITTAL</span><span class="pill">FINE</span><span class="pill">PROBATION</span><span class="pill">PRISON</span>
+    <p style="margin-top:6px">FINE creates a receivable in Finanzen, PRISON creates a J_INMATE row.</p>
+  </div>
+  <div class="note blue">
+    <h3>4 · Judge</h3>
+    <span class="pill">Weber</span><span class="pill">Krüger</span><span class="pill">Aydin</span>
+    <p style="margin-top:6px">Judges are added as keyword entries in the keyword administration.</p>
+  </div>
+  <div class="note red">
+    <h3>5 · SecurityLevel</h3>
+    <span class="pill">LOW</span><span class="pill">MEDIUM</span><span class="pill">HIGH</span>
+  </div>
+  <div class="note red">
+    <h3>6 · InmateStatus</h3>
+    <span class="pill">IN_CUSTODY</span><span class="pill">ON_PAROLE</span><span class="pill">RELEASED</span>
+  </div>
+</div>
+
+<h2>Validations</h2>
+<div class="grid g3">
+  <div class="note blue">
+    <h3>onValidation on HEARINGDATE, J_COURTCASE</h3>
+    <ul>
+      <li>HEARINGDATE must not be before FILINGDATE.</li>
+      <li>One JUDGE holds at most 3 hearings on the same calendar day. Cases with STATUS = DISMISSED do not count.</li>
+      <li>Message: "Judge {NAME} already has 3 hearings on {DATE}. Please choose a different day or judge."</li>
+    </ul>
+  </div>
+  <div class="note red">
+    <h3>onValidation on CITIZEN_ID, J_INMATE</h3>
+    <ul>
+      <li>A citizen can have only one J_INMATE row with STATUS = IN_CUSTODY at a time.</li>
+      <li>Message: "{CITIZEN} is already in custody (inmate number {NUMBER})."</li>
+    </ul>
+  </div>
+  <div class="note red">
+    <h3>onValidation on CELL, J_INMATE</h3>
+    <ul>
+      <li>At most 2 inmates with STATUS = IN_CUSTODY per CELL.</li>
+      <li>Inmates with SECURITYLEVEL = HIGH get a cell of their own.</li>
+      <li>Message: "Cell {CELL} is full. Please choose a different cell."</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Actions</h2>
+<div class="grid g2">
+  <div class="note yellow">
+    <h3>ScheduleHearing_action</h3>
+    <div class="where">On J_COURTCASE</div>
+    <ul>
+      <li>Allowed while STATUS = FILED or HEARING_SCHEDULED (rescheduling)</li>
+      <li>Dialog asks for date and time, writes HEARINGDATE (validation above applies)</li>
+      <li>Sets STATUS = HEARING_SCHEDULED</li>
+    </ul>
+  </div>
+  <div class="note yellow">
+    <h3>PronounceVerdict_action <span class="tag">links Gericht → Gefängnis + Finanzen</span></h3>
+    <div class="where">On J_COURTCASE</div>
+    <ul>
+      <li>Checks STATUS = HEARING_SCHEDULED and HEARINGDATE ≤ now, otherwise error "The hearing has not taken place yet"</li>
+      <li>Dialog: VERDICT, plus FINEAMOUNT (for FINE) or SENTENCEMONTHS (for PRISON)</li>
+      <li>FINE: calls the Finanzen service to create a receivable for the citizen and stores its id in RECEIVABLE_ID</li>
+      <li>PRISON: inserts a J_INMATE row (case, citizen, ADMISSIONDATE = today, PLANNEDRELEASEDATE = today + months) and opens its EditView for CELL and SECURITYLEVEL</li>
+      <li>Sets STATUS = VERDICT</li>
+    </ul>
+  </div>
+  <div class="note yellow">
+    <h3>AssignJob_action <span class="tag">links Gefängnis → Jobs</span></h3>
+    <div class="where">On J_INMATE</div>
+    <ul>
+      <li>Allowed only for STATUS = IN_CUSTODY and SECURITYLEVEL ≠ HIGH</li>
+      <li>Lookup shows only open jobs of the Jobs module</li>
+      <li>Writes the selected job to JOB_ID</li>
+    </ul>
+  </div>
+  <div class="note yellow">
+    <h3>ReleaseInmate_action</h3>
+    <div class="where">On J_INMATE</div>
+    <ul>
+      <li>Writes today's date to RELEASEDATE</li>
+      <li>Before PLANNEDRELEASEDATE: STATUS = ON_PAROLE, otherwise STATUS = RELEASED</li>
+      <li>Frees the cell. If no imprisonment of the case is IN_CUSTODY any more, the case gets STATUS = CLOSED</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Calculated Display Values</h2>
+<div class="grid g2">
+  <div class="note teal">
+    <h3>remainingDays (No database column needed!)</h3>
+    <div class="where">On J_INMATE, read-only, shown while STATUS = IN_CUSTODY</div>
+<pre>SELECT GREATEST(DATEDIFF(PLANNEDRELEASEDATE, CURRENT_DATE), 0)
+FROM   J_INMATE
+WHERE  J_INMATEID = :currentInmate</pre>
+    <p style="margin-top:10px">Example: admission 01/09/2026, 6 months → planned release 01/03/2027. On 12/10/2026 the view shows <b>140 days</b>.</p>
+  </div>
+  <div class="note teal">
+    <h3>priorConvictions (No database column needed!)</h3>
+    <div class="where">On J_COURTCASE, read-only, helps the judge before the verdict</div>
+<pre>SELECT COUNT(*)
+FROM   J_COURTCASE
+WHERE  CITIZEN_ID = :currentCitizen
+  AND  J_COURTCASEID &lt;&gt; :currentCase
+  AND  VERDICT IN ('FINE','PROBATION','PRISON')</pre>
+    <div class="scroll" style="margin-top:10px">
+    <table class="ex">
+      <tr><th>CASE</th><th>VERDICT</th><th>COUNTS</th></tr>
+      <tr><td>J-2025-0031</td><td>FINE</td><td>yes</td></tr>
+      <tr class="off"><td>J-2025-0077</td><td>ACQUITTAL</td><td>no</td></tr>
+      <tr><td>J-2026-0004</td><td>PROBATION</td><td>yes</td></tr>
+    </table>
+    </div>
+    <p style="margin-top:8px">→ 2 prior convictions for this citizen.</p>
+  </div>
+</div>
+
+<h2>Index (Global Search)</h2>
+<div class="grid g2">
+  <div class="note blue">
+    <h3>J_CourtCase · indexRecordContainer</h3>
+    <ul>
+      <li>Index group <code>Justice</code></li>
+      <li>Searchable: CASENUMBER, TITLE, citizen name (join to Bürger), JUDGE, CASETYPE</li>
+      <li>Hit shows "J-2026-0012 · Noise complaint Hauptstraße"</li>
+      <li>affectedIds also react to a name change of the citizen in the Bürger module</li>
+    </ul>
+  </div>
+  <div class="note red">
+    <h3>J_Inmate · indexRecordContainer</h3>
+    <ul>
+      <li>Index group <code>Justice</code></li>
+      <li>Searchable: INMATENUMBER, citizen name, CELL, STATUS</li>
+      <li>Hit shows "H-2026-0003 · Ali Demir · Cell B-12"</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Features</h2>
+<div class="grid g3">
+  <div class="note blue">
+    <h3>Court case Main view tabs</h3>
+    <ul>
+      <li>Imprisonments (J_Inmate consumer)</li>
+      <li>Documents (indictment, verdict)</li>
+      <li>Appointments (hearings)</li>
+      <li>Log</li>
+    </ul>
+  </div>
+  <div class="note red">
+    <h3>Inmate Main view tabs</h3>
+    <ul>
+      <li>Court case (preview of the linked case)</li>
+      <li>Activities (visits, incidents)</li>
+      <li>Documents</li>
+      <li>Log</li>
+    </ul>
+  </div>
+  <div class="note stone">
+    <h3>For the other modules</h3>
+    <ul>
+      <li>Citizen in Bürger gets tabs "Court cases" and "Imprisonments" (or a 360° entry)</li>
+      <li>Dashlet "Justice today": hearings this week, inmates in custody, releases in the next 30 days</li>
+    </ul>
+  </div>
+</div>
+
+<h2>APIs</h2>
+<div class="grid g3">
+  <div class="note stone">
+    <h3>J_CriminalRecord_rest <span class="tag">offered</span></h3>
+    <div class="where">GET ?citizenId=…</div>
+    <p>Returns prior convictions and whether the citizen is in custody.</p>
+<pre>{ "inCustody": false,
+  "convictions": [
+    { "case": "J-2026-0004",
+      "verdict": "PROBATION",
+      "date": "2026-04-17" } ] }</pre>
+    <p style="margin-top:8px">Used by Jobs (background check of applicants) and Bürger (certificate of good conduct).</p>
+  </div>
+  <div class="note stone">
+    <h3>J_CourtCase_rest <span class="tag">offered</span></h3>
+    <div class="where">POST · create case</div>
+    <p>Complaint Management escalates a complaint to court. Body: COMPLAINT_ID, CITIZEN_ID, TITLE. The case starts with CASETYPE = ADMINISTRATIVE and STATUS = FILED, and the response returns the CASENUMBER.</p>
+  </div>
+  <div class="note stone">
+    <h3>Finanzen · createReceivable <span class="tag">needed from Hannes</span></h3>
+    <div class="where">Service or REST, called by PronounceVerdict_action</div>
+    <p>Input: CITIZEN_ID, amount, reason ("Fine J-2026-0012"). Output: id of the receivable, stored in RECEIVABLE_ID.</p>
+  </div>
+</div>
+
+<h2>Interfaces to Agree on 16.10.</h2>
+<div class="note stone">
+  <div class="scroll">
+  <table class="ex">
+    <tr><th>Partner module</th><th>Justice uses</th><th>Justice offers</th></tr>
+    <tr><td>Bürger · Hannes</td><td>Citizen table + lookup consumer (CITIZEN_ID)</td><td>Criminal record API, tabs for the citizen view</td></tr>
+    <tr><td>Finanzen · Hannes</td><td>createReceivable for fines</td><td>Back reference RECEIVABLE_ID on the case</td></tr>
+    <tr><td>Jobs · Julia</td><td>Job consumer filtered to open jobs (JOB_ID)</td><td>Criminal record API for background checks</td></tr>
+    <tr><td>Beschwerdemanagement · Julia</td><td>Complaint lookup (COMPLAINT_ID)</td><td>Create-case endpoint for escalation</td></tr>
+  </table>
+  </div>
+  <p class="hint" style="color:var(--stone-ink)">CITIZEN_ID, COMPLAINT_ID, JOB_ID and RECEIVABLE_ID are placeholder names until the partner tables are named.</p>
+</div>
+
+<h2>Naming Conventions</h2>
+<p style="font-size:14px;max-width:90ch">
+  <code>J_</code> Justice (table prefix) · <code>_ID</code> Foreign-key suffix · PK Primary Key · FK Foreign Key · <code>_action</code> Action suffix (CamelCase, no prefix) · <code>_view</code> View suffix · <code>_param</code> Parameter suffix · <code>_rest</code> Webservice suffix · Keyword containers in CamelCase · validations get no separate name — each is just the field's own onValidation.js
+</p>
+
+<footer>
+  TODO for 16.10. covered: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 4 actions · 2 index containers · features · 2 offered APIs + 1 needed · 3 validations · 2 calculated display values · 6 keyword categories.
+</footer>
+</div>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs";
+mermaid.initialize({ startOnLoad: true, theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "neutral" });
+</script>
+</body>
+</html>
