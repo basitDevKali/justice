@@ -141,15 +141,17 @@ flowchart LR
     J["Jobs"]
     K["Beschwerdemanagement<br/>(complaint)"]
   end
-  C -- "PRISON verdict → 0..1 imprisonment" --> P
+  P -- "J_COURTCASE_ID (0..1 per case)" --> C
   C -- "CITIZEN_ID (defendant)" --> B
   P -- "CITIZEN_ID (inmate)" --> B
-  C -- "fine → RECEIVABLE_ID" --> F
-  K -- "escalation → COMPLAINT_ID" --> C
-  P -- "work assignment → JOB_ID" --> J
-  J -. "criminal record API" .-> C
+  C -- "RECEIVABLE_ID (fine)" --> F
+  C -- "COMPLAINT_ID" --> K
+  P -- "JOB_ID (work assignment)" --> J
+  K -. "create case (escalation)" .-> C
+  J -. "criminal record" .-> C
+  B -. "criminal record" .-> C
 </pre>
-<p class="hint" style="color:var(--ink-soft)">Solid line = foreign key stored in the Justice tables. Dashed line = the other module calls a Justice API.</p>
+<p class="hint" style="color:var(--ink-soft)">Solid arrow = foreign key: it starts at the Justice table that stores the key and points to the record it references. Dashed arrow = API call: it starts at the module that calls and points to the Justice API it uses.</p>
 
 <h2>Tables</h2>
 <div class="grid g2">
