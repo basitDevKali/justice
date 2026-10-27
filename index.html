@@ -187,7 +187,7 @@ flowchart LR
     <div class="row"><div class="key empty"></div><div class="fld">RELEASEDATE</div><div class="typ">DATE</div></div>
     <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">STATUS</div><div class="typ">VARCHAR(36)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">Audit fields<small>DATE_NEW, DATE_EDIT, USER_NEW, USER_EDIT</small></div><div class="typ">standard</div></div>
-    <p class="hint">One row = one imprisonment, at most one per court case. The row is created only through PronounceVerdict_action, which opens the EditView prefilled (no "New" button anywhere) · an inmate is shown as citizen name + CASENUMBER of its court case · CITIZEN_ID is taken over from the court case and read-only · CELL is picked from a dropdown <code>001</code>–<code>100</code> and suggested automatically (see "CELL suggestion" below) · ADMISSIONDATE defaults to today, not before VERDICTDATE · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case, read-only · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY · STATUS, RELEASEDATE and JOB_ID are set only by the actions (read-only in the EditView).</p>
+    <p class="hint">One row = one imprisonment, at most one per court case. The row is created only through PronounceVerdict_action, which opens the EditView prefilled (no "New" button anywhere) · an inmate is shown as citizen name + CASENUMBER of its court case · CITIZEN_ID is taken over from the court case and read-only · CELL is picked from a dropdown <code>001</code>–<code>100</code> and suggested automatically (see "CELL suggestion" below) · ADMISSIONDATE defaults to today, not before VERDICTDATE · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case, read-only · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY · STATUS, RELEASEDATE and JOB_ID are set only by the actions (read-only in the EditView) · once STATUS is RELEASED or RELEASED_EARLY, the whole record is read-only.</p>
   </div>
 </div>
 
@@ -233,17 +233,14 @@ flowchart LR
   <div class="note blue">
     <h3>3 · VerdictType</h3>
     <span class="pill">ACQUITTAL</span><span class="pill">FINE</span><span class="pill">PROBATION</span><span class="pill">PRISON</span>
-    <p style="margin-top:6px">PRISON creates a J_INMATE row.</p>
   </div>
   <div class="note blue">
     <h3>4 · Judge</h3>
     <span class="pill">Weber</span><span class="pill">Krüger</span><span class="pill">Aydin</span>
-    <p style="margin-top:6px">Judges are maintained as keyword entries in the keyword administration.</p>
   </div>
   <div class="note red">
     <h3>5 · SecurityLevel</h3>
     <span class="pill">LOW</span><span class="pill">MEDIUM</span><span class="pill">HIGH</span>
-    <p style="margin-top:6px">Defaults to MEDIUM. HIGH means a cell of one's own and no work assignment.</p>
   </div>
   <div class="note red">
     <h3>6 · InmateStatus</h3>
@@ -259,8 +256,8 @@ flowchart LR
     <ul>
       <li>A citizen can have only one J_INMATE row with STATUS = IN_CUSTODY at a time.</li>
       <li>The row being edited is excluded from the check (J_INMATEID &lt;&gt; current), so saving an existing inmate does not fail on itself.</li>
-      <li>Message: "{CITIZEN} is already in custody (case {CASENUMBER})."</li>
-      <li>So a citizen in custody can't receive a second prison sentence; that case stays FILED until the release.</li>
+      <li>Released inmates are read-only, so the check only ever runs for an inmate IN_CUSTODY.</li>
+      <li>Message: "{CITIZEN} is already in custody (case {CASENUMBER} of the existing imprisonment)."</li>
     </ul>
   </div>
   <div class="note red">
@@ -271,7 +268,8 @@ flowchart LR
       <li>The inmate being edited is not counted (J_INMATEID &lt;&gt; current); otherwise editing an inmate in a full cell would fail.</li>
       <li>Runs on SECURITYLEVEL as well, because raising an inmate to HIGH changes whether the cell may be shared.</li>
       <li>SECURITYLEVEL only: HIGH is rejected while the inmate has a job.</li>
-      <li>Messages: "Cell {CELL} is full. Please choose a different cell." · "An inmate with security level HIGH needs a cell of their own." · "Remove the job before setting security level HIGH."</li>
+      <li>Released inmates are read-only, so a released inmate's old cell is never checked again.</li>
+      <li>Messages: "Cell {CELL} is full. Please choose a different cell." · "An inmate with security level HIGH needs a cell of their own." (HIGH inmate into an occupied cell) · "Cell {CELL} is occupied by an inmate with security level HIGH." (anyone into a HIGH inmate's cell) · "Remove the job before setting security level HIGH."</li>
     </ul>
   </div>
 </div>
@@ -285,7 +283,7 @@ flowchart LR
       <li>Allowed only while STATUS = FILED</li>
       <li>Dialog: pick VERDICT (choices depend on CASETYPE). FINE also asks for FINEAMOUNT, PRISON for SENTENCEMONTHS</li>
       <li><b>FINE, ACQUITTAL, PROBATION:</b> saves VERDICT, VERDICTDATE = now (and FINEAMOUNT for FINE), STATUS = CLOSED</li>
-      <li><b>PRISON:</b> error if the citizen is already in custody. Otherwise the inmate form opens prefilled; the clerk picks SECURITYLEVEL and saves</li>
+      <li><b>PRISON:</b> error if the citizen is already in custody; the case then stays FILED until the release (no second prison sentence). Otherwise the inmate form opens prefilled; the clerk picks SECURITYLEVEL and saves</li>
       <li>Only when the inmate is saved (onDBInsert) does the case get VERDICT = PRISON, VERDICTDATE, SENTENCEMONTHS and STATUS = SENTENCED. If the form is cancelled, the case stays FILED</li>
     </ul>
   </div>
