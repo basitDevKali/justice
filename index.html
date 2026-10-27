@@ -149,8 +149,8 @@ flowchart LR
   C -- "COMPLAINT_ID" --> K
   P -- "JOB_ID (work assignment)" --> J
   K -. "create case (escalation)" .-> C
-  J -. "criminal record" .-> C
-  B -. "criminal record" .-> C
+  J -. "asks for criminal record" .-> C
+  B -. "asks for criminal record" .-> C
 </pre>
 <p class="hint" style="color:var(--ink-soft)">Solid arrow = foreign key: it starts at the Justice table that stores the key and points to the record it references. Dashed arrow = request: another module asks Justice for information or asks it to do something. The arrow starts at the module that asks.</p>
 
@@ -167,26 +167,20 @@ flowchart LR
     <div class="row ext"><div class="key">FK</div><div class="fld">COMPLAINT_ID<small>→ Beschwerde</small></div><div class="typ">CHAR(36)</div></div>
     <div class="row ext"><div class="key">FK</div><div class="fld">RECEIVABLE_ID<small>→ Finanzen</small></div><div class="typ">CHAR(36)</div></div>
     <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">JUDGE</div><div class="typ">VARCHAR(36)</div></div>
-    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">FILINGDATE</div><div class="typ">DATE</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">HEARINGDATE</div><div class="typ">DATETIME</div></div>
     <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">STATUS</div><div class="typ">VARCHAR(36)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">VERDICT</div><div class="typ">VARCHAR(36)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">VERDICTDATE</div><div class="typ">DATETIME</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">FINEAMOUNT</div><div class="typ">DECIMAL(10,2)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">SENTENCEMONTHS</div><div class="typ">INT</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">DESCRIPTION</div><div class="typ">LONGTEXT</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">DATE_NEW</div><div class="typ">DATETIME</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">DATE_EDIT</div><div class="typ">DATETIME</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">USER_NEW</div><div class="typ">VARCHAR(30)</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">USER_EDIT</div><div class="typ">VARCHAR(30)</div></div>
-    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · FILINGDATE defaults to today · STATUS and HEARINGDATE are set only by the actions (read-only in the EditView) · VERDICT, VERDICTDATE, FINEAMOUNT, SENTENCEMONTHS and RECEIVABLE_ID are set only by PronounceVerdict_action · VERDICTDATE stores date and time, so two verdicts on the same day keep their order (needed by priorConvictions) · status flow: FILED → HEARING_SCHEDULED → CLOSED, or → VERDICT → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID is filled when a case is escalated from Complaint Management · audit fields maintained automatically by ADITO.</p>
+    <div class="row"><div class="key empty"></div><div class="fld">Audit fields<small>DATE_NEW, DATE_EDIT, USER_NEW, USER_EDIT</small></div><div class="typ">standard</div></div>
+    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · DATE_NEW is the filing date of the case · STATUS and HEARINGDATE are set only by the actions (read-only in the EditView) · VERDICT, VERDICTDATE, FINEAMOUNT, SENTENCEMONTHS and RECEIVABLE_ID are set only by PronounceVerdict_action · VERDICTDATE stores date and time, so two verdicts on the same day keep their order (needed by priorConvictions) · status flow: FILED → HEARING_SCHEDULED → CLOSED, or → VERDICT → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID is filled when a case is escalated from Complaint Management · audit fields maintained automatically by ADITO.</p>
   </div>
 
   <div class="tbl red">
     <div class="cap">Context 2 · Prison (Gefängnis)</div>
     <h3>J_INMATE</h3>
     <div class="row"><div class="key">PK</div><div class="fld">J_INMATEID</div><div class="typ">CHAR(36)</div></div>
-    <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">INMATENUMBER</div><div class="typ">VARCHAR(30)</div></div>
     <div class="row"><div class="key">FK<br/>💣</div><div class="fld">J_COURTCASE_ID<small>→ Court</small></div><div class="typ">CHAR(36)</div></div>
     <div class="row ext"><div class="key">FK<br/>💣</div><div class="fld">CITIZEN_ID<small>→ Bürger</small></div><div class="typ">CHAR(36)</div></div>
     <div class="row ext"><div class="key">FK</div><div class="fld">JOB_ID<small>→ Jobs</small></div><div class="typ">CHAR(36)</div></div>
@@ -196,15 +190,37 @@ flowchart LR
     <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">PLANNEDRELEASEDATE</div><div class="typ">DATE</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">RELEASEDATE</div><div class="typ">DATE</div></div>
     <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">STATUS</div><div class="typ">VARCHAR(36)</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">DATE_NEW</div><div class="typ">DATETIME</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">DATE_EDIT</div><div class="typ">DATETIME</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">USER_NEW</div><div class="typ">VARCHAR(30)</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">USER_EDIT</div><div class="typ">VARCHAR(30)</div></div>
-    <p class="hint">One row = one imprisonment, at most one per court case (a case has exactly one defendant). The row is created only through PronounceVerdict_action, which opens the EditView prefilled (no "New" button in the FilterView) · INMATENUMBER generated on insert (<code>P-2026-0001</code>) · CITIZEN_ID is taken over from the court case and read-only · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY · RELEASEDATE set only by ReleaseInmate_action · JOB_ID set only by AssignJob_action and kept after release as history · audit fields as in J_COURTCASE.</p>
+    <div class="row"><div class="key empty"></div><div class="fld">Audit fields<small>DATE_NEW, DATE_EDIT, USER_NEW, USER_EDIT</small></div><div class="typ">standard</div></div>
+    <p class="hint">One row = one imprisonment, at most one per court case (a case has exactly one defendant). The row is created through PronounceVerdict_action or the "New" button in the case's Imprisonment tab, both of which open the EditView prefilled (no "New" button in the FilterView) · an inmate is identified by the CASENUMBER of its court case (one inmate per case) ·CITIZEN_ID is taken over from the court case and read-only · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · CELL is suggested automatically (see "CELL suggestion" below) · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY, set only by ReleaseInmate_action (read-only in the EditView) so it can never drift from RELEASEDATE and the case status · RELEASEDATE set only by ReleaseInmate_action · JOB_ID set only by AssignJob_action and kept after release as history · audit fields as in J_COURTCASE.</p>
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="note red">
+    <h3>CELL suggestion (valueProcess on CELL, J_INMATE)</h3>
+    <div class="where">New records only; the clerk can still change the suggested cell</div>
+    <ul>
+      <li>The prison has cells <code>001</code> to <code>100</code></li>
+      <li>Suggests the <b>lowest cell number that still has space</b>, using the same rules as the cell validation below</li>
+    </ul>
+    <div class="scroll" style="margin-top:10px">
+    <table class="ex">
+      <tr><th>CELL</th><th>IN_CUSTODY</th><th>FREE</th></tr>
+      <tr class="off"><td>001</td><td>2</td><td>no</td></tr>
+      <tr><td>002</td><td>1</td><td>yes ← suggested</td></tr>
+      <tr><td>003</td><td>0</td><td>yes</td></tr>
+    </table>
+    </div>
   </div>
 </div>
 
 <h2>Keyword Categories</h2>
+<div class="grid g2">
+  <div class="note blue">
+    <h3>How keyword values are stored</h3>
+    <p>Every keyword field (CASETYPE, STATUS, VERDICT, JUDGE, SECURITYLEVEL, INMATESTATUS) stores the <b>readable value itself</b> (e.g. <code>PRISON</code>), not a technical key id. That way all validations, action checks and SQL conditions in this concept can compare against the literal values directly. The keyword registry only defines which values exist; the keyword administration maps the internal key to this stored value.</p>
+  </div>
+</div>
 <div class="grid kw">
   <div class="note blue">
     <h3>1 · CaseType</h3>
@@ -224,7 +240,7 @@ flowchart LR
   <div class="note blue">
     <h3>4 · Judge</h3>
     <span class="pill">Weber</span><span class="pill">Krüger</span><span class="pill">Aydin</span>
-    <p style="margin-top:6px">Judges are added as keyword entries in the keyword administration.</p>
+    <p style="margin-top:6px">Judges are added as keyword entries in the keyword administration. Fixed name keywords are fragile in a real system (judges come and go) — fine for this training project, and no validation depends on specific judge names.</p>
   </div>
   <div class="note red">
     <h3>5 · SecurityLevel</h3>
@@ -243,8 +259,9 @@ flowchart LR
   <div class="note blue">
     <h3>onValidation on HEARINGDATE, J_COURTCASE</h3>
     <ul>
-      <li>HEARINGDATE must not be before FILINGDATE.</li>
+      <li>HEARINGDATE must not be before the filing date (DATE_NEW).</li>
       <li>One JUDGE holds at most 3 hearings on the same calendar day. Only cases with STATUS = HEARING_SCHEDULED count, so hearings that already ended in a verdict are ignored.</li>
+      <li>The case being edited is excluded from the check (J_COURTCASEID &lt;&gt; current), so rescheduling the same case to its own day does not fail on itself.</li>
       <li>Message: "Judge {NAME} already has 3 hearings on {DATE}. Please choose a different day or judge."</li>
     </ul>
   </div>
@@ -253,7 +270,7 @@ flowchart LR
     <ul>
       <li>A citizen can have only one J_INMATE row with STATUS = IN_CUSTODY at a time.</li>
       <li>The row being edited is excluded from the check (J_INMATEID &lt;&gt; current), so saving an existing inmate does not fail on itself.</li>
-      <li>Message: "{CITIZEN} is already in custody (inmate number {NUMBER})."</li>
+      <li>Message: "{CITIZEN} is already in custody (case {CASENUMBER})."</li>
     </ul>
   </div>
   <div class="note red">
@@ -276,7 +293,7 @@ flowchart LR
     <ul>
       <li>Allowed while STATUS = FILED or HEARING_SCHEDULED (rescheduling)</li>
       <li>Dialog asks for date and time, writes HEARINGDATE (validation above applies)</li>
-      <li>Creates an appointment linked to the case (shown in the Appointments tab); a reschedule moves it</li>
+      <li>Creates an appointment linked to the case (shown in the Appointments tab); the appointment stores the court case as its linked object, so a reschedule finds it via that link and moves it (no second appointment is created)</li>
       <li>Sets STATUS = HEARING_SCHEDULED</li>
     </ul>
   </div>
@@ -289,7 +306,7 @@ flowchart LR
       <li>PRISON while the citizen is already IN_CUSTODY: error "{CITIZEN} is already in custody", nothing is saved</li>
       <li>Writes VERDICT and VERDICTDATE = now (date and time)</li>
       <li>FINE: calls the Finanzen service to create a receivable for the citizen and stores its id in RECEIVABLE_ID</li>
-      <li>PRISON: opens the J_INMATE EditView prefilled (case, citizen, ADMISSIONDATE = today, PLANNEDRELEASEDATE = today + months); the clerk adds CELL and SECURITYLEVEL and saves. If the dialog is cancelled, the case's Imprisonment tab offers "New" until the row exists</li>
+      <li>PRISON: saves VERDICT, VERDICTDATE = now and SENTENCEMONTHS on the case <b>first</b>, then opens the J_INMATE EditView prefilled (case, citizen, ADMISSIONDATE = today, PLANNEDRELEASEDATE = today + months); the clerk picks SECURITYLEVEL, checks the suggested CELL and saves. Because the verdict is already saved, cancelling the dialog leaves no orphan state: the case stays in STATUS = VERDICT, and the "New" button in the Imprisonment tab opens the same prefilled EditView, computing PLANNEDRELEASEDATE from the case's stored SENTENCEMONTHS</li>
       <li>Sets STATUS = VERDICT for PRISON, otherwise STATUS = CLOSED</li>
     </ul>
   </div>
@@ -334,7 +351,7 @@ WHERE  CITIZEN_ID = :currentCitizen
   AND  J_COURTCASEID &lt;&gt; :currentCase
   AND  VERDICT IN ('FINE','PROBATION','PRISON')
   AND  VERDICTDATE &lt; COALESCE(:currentVerdictDate, CURRENT_TIMESTAMP)</pre>
-    <p style="margin-top:8px">Only verdicts before this case's own verdict count, so an old case does not show later convictions as "prior". Because VERDICTDATE has a time and the fallback is CURRENT_TIMESTAMP (not CURRENT_DATE), a verdict pronounced earlier on the same day also counts.</p>
+    <p style="margin-top:8px">Only verdicts before this case's own verdict count, so an old case does not show later convictions as "prior". Any case with a set VERDICT counts — including one still in STATUS = VERDICT (sentence running), since a pronounced verdict is final in this module. Because VERDICTDATE has a time and the fallback is CURRENT_TIMESTAMP (not CURRENT_DATE), a verdict pronounced earlier on the same day also counts.</p>
     <div class="scroll" style="margin-top:10px">
     <table class="ex">
       <tr><th>CASE</th><th>VERDICT</th><th>COUNTS</th></tr>
@@ -362,8 +379,8 @@ WHERE  CITIZEN_ID = :currentCitizen
     <h3>J_Inmate · indexRecordContainer</h3>
     <ul>
       <li>Index group <code>Justice</code></li>
-      <li>Searchable: INMATENUMBER, citizen name, CELL, STATUS</li>
-      <li>Hit shows "P-2026-0003 · Ali Demir · Cell B-12"</li>
+      <li>Searchable: CASENUMBER (join to J_COURTCASE), citizen name, CELL, STATUS</li>
+      <li>Hit shows "J-2026-0012 · Ali Demir · Cell 012"</li>
     </ul>
   </div>
 </div>
@@ -411,7 +428,7 @@ WHERE  CITIZEN_ID = :currentCitizen
       <tr><td>J-2026-0004</td><td>PROBATION</td><td>17/04/2026</td></tr>
     </table>
     </div>
-    <p style="margin-top:8px">DATE is the day of the verdict. Used by Jobs (background check of applicants) and Bürger (certificate of good conduct).</p>
+    <p style="margin-top:8px">DATE is the day of the verdict (the full VERDICTDATE timestamp is returned in ISO format, e.g. <code>2026-04-17T10:30:00</code>; consumers display only the day). Used by Jobs (background check of applicants) and Bürger (certificate of good conduct).</p>
   </div>
   <div class="note stone">
     <h3>J_CourtCase_rest <span class="tag">offered</span></h3>
