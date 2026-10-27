@@ -171,7 +171,7 @@ flowchart LR
     <div class="row"><div class="key empty"></div><div class="fld">HEARINGDATE</div><div class="typ">DATETIME</div></div>
     <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">STATUS</div><div class="typ">VARCHAR(36)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">VERDICT</div><div class="typ">VARCHAR(36)</div></div>
-    <div class="row"><div class="key empty"></div><div class="fld">VERDICTDATE</div><div class="typ">DATE</div></div>
+    <div class="row"><div class="key empty"></div><div class="fld">VERDICTDATE</div><div class="typ">DATETIME</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">FINEAMOUNT</div><div class="typ">DECIMAL(10,2)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">SENTENCEMONTHS</div><div class="typ">INT</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">DESCRIPTION</div><div class="typ">LONGTEXT</div></div>
@@ -179,7 +179,7 @@ flowchart LR
     <div class="row"><div class="key empty"></div><div class="fld">DATE_EDIT</div><div class="typ">DATETIME</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">USER_NEW</div><div class="typ">VARCHAR(30)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">USER_EDIT</div><div class="typ">VARCHAR(30)</div></div>
-    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · FILINGDATE defaults to today · STATUS and HEARINGDATE are set only by the actions (read-only in the EditView) · VERDICT, VERDICTDATE, FINEAMOUNT, SENTENCEMONTHS and RECEIVABLE_ID are set only by PronounceVerdict_action · status flow: FILED → HEARING_SCHEDULED → CLOSED, or → VERDICT → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID is filled when a case is escalated from Complaint Management · audit fields maintained automatically by ADITO.</p>
+    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · FILINGDATE defaults to today · STATUS and HEARINGDATE are set only by the actions (read-only in the EditView) · VERDICT, VERDICTDATE, FINEAMOUNT, SENTENCEMONTHS and RECEIVABLE_ID are set only by PronounceVerdict_action · VERDICTDATE stores date and time, so two verdicts on the same day keep their order (needed by priorConvictions) · status flow: FILED → HEARING_SCHEDULED → CLOSED, or → VERDICT → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID is filled when a case is escalated from Complaint Management · audit fields maintained automatically by ADITO.</p>
   </div>
 
   <div class="tbl red">
@@ -252,6 +252,7 @@ flowchart LR
     <h3>onValidation on CITIZEN_ID, J_INMATE</h3>
     <ul>
       <li>A citizen can have only one J_INMATE row with STATUS = IN_CUSTODY at a time.</li>
+      <li>The row being edited is excluded from the check (J_INMATEID &lt;&gt; current), so saving an existing inmate does not fail on itself.</li>
       <li>Message: "{CITIZEN} is already in custody (inmate number {NUMBER})."</li>
     </ul>
   </div>
@@ -260,6 +261,8 @@ flowchart LR
     <ul>
       <li>At most 2 inmates with STATUS = IN_CUSTODY per CELL.</li>
       <li>An inmate with SECURITYLEVEL = HIGH never shares a cell: neither can a HIGH inmate move into an occupied cell, nor anyone into a cell with a HIGH inmate.</li>
+      <li>The inmate being edited is not counted (J_INMATEID &lt;&gt; current); otherwise editing an inmate in a full cell would fail.</li>
+      <li>Runs on SECURITYLEVEL as well, because raising an inmate to HIGH changes whether the cell may be shared.</li>
       <li>Message: "Cell {CELL} is full. Please choose a different cell."</li>
     </ul>
   </div>
@@ -284,7 +287,7 @@ flowchart LR
       <li>Checks STATUS = HEARING_SCHEDULED and HEARINGDATE ≤ now, otherwise error "The hearing has not taken place yet"</li>
       <li>Dialog: VERDICT (choices depend on CASETYPE), plus FINEAMOUNT &gt; 0 (for FINE) or SENTENCEMONTHS ≥ 1 (for PRISON)</li>
       <li>PRISON while the citizen is already IN_CUSTODY: error "{CITIZEN} is already in custody", nothing is saved</li>
-      <li>Writes VERDICT and VERDICTDATE = today</li>
+      <li>Writes VERDICT and VERDICTDATE = now (date and time)</li>
       <li>FINE: calls the Finanzen service to create a receivable for the citizen and stores its id in RECEIVABLE_ID</li>
       <li>PRISON: opens the J_INMATE EditView prefilled (case, citizen, ADMISSIONDATE = today, PLANNEDRELEASEDATE = today + months); the clerk adds CELL and SECURITYLEVEL and saves. If the dialog is cancelled, the case's Imprisonment tab offers "New" until the row exists</li>
       <li>Sets STATUS = VERDICT for PRISON, otherwise STATUS = CLOSED</li>
@@ -303,6 +306,7 @@ flowchart LR
     <h3>ReleaseInmate_action</h3>
     <div class="where">On J_INMATE</div>
     <ul>
+      <li>Started manually by the clerk, there is no background job. Due and overdue releases are listed in the "Justice today" dashlet</li>
       <li>Writes today's date to RELEASEDATE</li>
       <li>Allowed only for STATUS = IN_CUSTODY</li>
       <li>Before PLANNEDRELEASEDATE: STATUS = RELEASED_EARLY, otherwise STATUS = RELEASED</li>
@@ -329,8 +333,8 @@ FROM   J_COURTCASE
 WHERE  CITIZEN_ID = :currentCitizen
   AND  J_COURTCASEID &lt;&gt; :currentCase
   AND  VERDICT IN ('FINE','PROBATION','PRISON')
-  AND  VERDICTDATE &lt; COALESCE(:currentVerdictDate, CURRENT_DATE)</pre>
-    <p style="margin-top:8px">Only verdicts before this case's own verdict count, so an old case does not show later convictions as "prior".</p>
+  AND  VERDICTDATE &lt; COALESCE(:currentVerdictDate, CURRENT_TIMESTAMP)</pre>
+    <p style="margin-top:8px">Only verdicts before this case's own verdict count, so an old case does not show later convictions as "prior". Because VERDICTDATE has a time and the fallback is CURRENT_TIMESTAMP (not CURRENT_DATE), a verdict pronounced earlier on the same day also counts.</p>
     <div class="scroll" style="margin-top:10px">
     <table class="ex">
       <tr><th>CASE</th><th>VERDICT</th><th>COUNTS</th></tr>
@@ -388,7 +392,7 @@ WHERE  CITIZEN_ID = :currentCitizen
     <h3>For the other modules</h3>
     <ul>
       <li>Citizen in Bürger gets tabs "Court cases" and "Imprisonments" (or a 360° entry)</li>
-      <li>Dashlet "Justice today": hearings this week, inmates in custody, releases in the next 30 days</li>
+      <li>Dashlet "Justice today": hearings this week, inmates in custody, releases in the next 30 days, overdue releases (PLANNEDRELEASEDATE passed, still IN_CUSTODY)</li>
     </ul>
   </div>
 </div>
@@ -404,7 +408,7 @@ WHERE  CITIZEN_ID = :currentCitizen
     { "case": "J-2026-0004",
       "verdict": "PROBATION",
       "date": "2026-04-17" } ] }</pre>
-    <p style="margin-top:8px">"date" is VERDICTDATE. Used by Jobs (background check of applicants) and Bürger (certificate of good conduct).</p>
+    <p style="margin-top:8px">"date" is the date part of VERDICTDATE. Used by Jobs (background check of applicants) and Bürger (certificate of good conduct).</p>
   </div>
   <div class="note stone">
     <h3>J_CourtCase_rest <span class="tag">offered</span></h3>
@@ -430,6 +434,23 @@ WHERE  CITIZEN_ID = :currentCitizen
   </table>
   </div>
   <p class="hint" style="color:var(--stone-ink)">CITIZEN_ID, COMPLAINT_ID, JOB_ID and RECEIVABLE_ID are placeholder names until the partner tables are named.</p>
+</div>
+
+<h2>Out of Scope</h2>
+<div class="grid g2">
+  <div class="note stone">
+    <h3>Correcting or appealing a verdict</h3>
+    <p>A pronounced verdict is final in this module. There is no action to revoke or change it, because that would also have to undo the receivable in Finanzen and the J_INMATE row. The Log tab shows who pronounced which verdict and when.</p>
+  </div>
+  <div class="note stone">
+    <h3>Ideas for later</h3>
+    <ul>
+      <li>Prison visits registered by citizens of the Bürger module</li>
+      <li>Incidents that raise SECURITYLEVEL</li>
+      <li>Crediting pre-trial detention against the sentence</li>
+      <li>Unpaid fines from Finanzen in the dashlet</li>
+    </ul>
+  </div>
 </div>
 
 <h2>Naming Conventions</h2>
