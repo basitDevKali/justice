@@ -173,7 +173,7 @@ flowchart LR
     <div class="row"><div class="key empty"></div><div class="fld">FINEAMOUNT</div><div class="typ">DECIMAL(10,2)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">SENTENCEMONTHS</div><div class="typ">INT</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">Audit fields<small>DATE_NEW, DATE_EDIT, USER_NEW, USER_EDIT</small></div><div class="typ">standard</div></div>
-    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · DATE_NEW is the filing date of the case · STATUS is set only by the actions (read-only in the EditView) · VERDICT, VERDICTDATE, FINEAMOUNT, SENTENCEMONTHS and RECEIVABLE_ID are set only by PronounceVerdict_action · VERDICTDATE stores date and time, so two verdicts on the same day keep their order (needed by priorConvictions) · status flow: FILED → CLOSED, or FILED → VERDICT → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID is filled when a case is escalated from Complaint Management · audit fields maintained automatically by ADITO.</p>
+    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · DATE_NEW is the filing date of the case · STATUS is set only by the actions (read-only in the EditView) · VERDICT, VERDICTDATE, FINEAMOUNT, SENTENCEMONTHS and RECEIVABLE_ID are set only by PronounceVerdict_action · status flow: FILED → CLOSED, or FILED → VERDICT → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID is filled when a case is escalated from Complaint Management · audit fields maintained automatically by ADITO.</p>
   </div>
 
   <div class="tbl red">
@@ -320,26 +320,6 @@ FROM   J_INMATE
 WHERE  J_INMATEID = :currentInmate</pre>
     <p style="margin-top:10px">Example: admission 01/09/2026, 6 months → planned release 01/03/2027. On 12/10/2026 the view shows <b>140 days</b>.</p>
   </div>
-  <div class="note teal">
-    <h3>priorConvictions (No database column needed!)</h3>
-    <div class="where">On J_COURTCASE, read-only, helps the judge before the verdict</div>
-<pre>SELECT COUNT(*)
-FROM   J_COURTCASE
-WHERE  CITIZEN_ID = :currentCitizen
-  AND  J_COURTCASEID &lt;&gt; :currentCase
-  AND  VERDICT IN ('FINE','PROBATION','PRISON')
-  AND  VERDICTDATE &lt; COALESCE(:currentVerdictDate, CURRENT_TIMESTAMP)</pre>
-    <p style="margin-top:8px">Only verdicts before this case's own verdict count, so an old case does not show later convictions as "prior". Any case with a set VERDICT counts — including one still in STATUS = VERDICT (sentence running), since a pronounced verdict is final in this module. Because VERDICTDATE has a time and the fallback is CURRENT_TIMESTAMP (not CURRENT_DATE), a verdict pronounced earlier on the same day also counts.</p>
-    <div class="scroll" style="margin-top:10px">
-    <table class="ex">
-      <tr><th>CASE</th><th>VERDICT</th><th>COUNTS</th></tr>
-      <tr><td>J-2025-0031</td><td>FINE</td><td>yes</td></tr>
-      <tr class="off"><td>J-2025-0077</td><td>ACQUITTAL</td><td>no</td></tr>
-      <tr><td>J-2026-0004</td><td>PROBATION</td><td>yes</td></tr>
-    </table>
-    </div>
-    <p style="margin-top:8px">→ 2 prior convictions for this citizen.</p>
-  </div>
 </div>
 
 <h2>Index (Global Search)</h2>
@@ -458,7 +438,7 @@ WHERE  CITIZEN_ID = :currentCitizen
 </p>
 
 <footer>
-  TODO for 16.10. covered: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · 2 index containers · features · 2 requests offered + 1 needed · 2 validations · 2 calculated display values · 6 keyword categories.
+  TODO for 16.10. covered: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · 2 index containers · features · 2 requests offered + 1 needed · 2 validations · 1 calculated display value · 6 keyword categories.
 </footer>
 </div>
 <script type="module">
