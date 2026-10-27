@@ -170,7 +170,7 @@ flowchart LR
     <div class="row"><div class="key empty"></div><div class="fld">FINEAMOUNT</div><div class="typ">DECIMAL(10,2)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">SENTENCEMONTHS</div><div class="typ">INT</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">Audit fields<small>DATE_NEW, DATE_EDIT, USER_NEW, USER_EDIT</small></div><div class="typ">standard</div></div>
-    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year), read-only, unique index · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · DATE_NEW is the filing date of the case · STATUS is set only by the actions and the inmate's afterSave (read-only in the EditView) · VERDICT, VERDICTDATE, FINEAMOUNT and SENTENCEMONTHS are set only by PronounceVerdict_action (PRISON: by the afterSave of the inmate, see the action) · RECEIVABLE_ID (optional, only when VERDICT = FINE) is picked via a lookup on the bills in Finanzen, after the bill for a fine was created there · status flow: FILED → CLOSED, or FILED → SENTENCED → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID (optional) is picked via a lookup on the complaints of Complaint Management when a case comes from a complaint · audit fields maintained automatically by ADITO · see "Read-only rules" below for what stays editable after the verdict.</p>
+    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · DATE_NEW is the filing date of the case · STATUS and the verdict fields are set only by the actions (read-only in the EditView) · status flow: FILED → CLOSED, or FILED → SENTENCED → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID (optional) is picked via a lookup on the complaints of Complaint Management · RECEIVABLE_ID (optional, only when VERDICT = FINE) is picked via a lookup on the bills in Finanzen.</p>
   </div>
 
   <div class="tbl red">
@@ -187,7 +187,7 @@ flowchart LR
     <div class="row"><div class="key empty"></div><div class="fld">RELEASEDATE</div><div class="typ">DATE</div></div>
     <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">STATUS</div><div class="typ">VARCHAR(36)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">Audit fields<small>DATE_NEW, DATE_EDIT, USER_NEW, USER_EDIT</small></div><div class="typ">standard</div></div>
-    <p class="hint">One row = one imprisonment, at most one per court case (a case has exactly one defendant), enforced by a unique index on J_COURTCASE_ID. The row is created only through PronounceVerdict_action, which opens the EditView prefilled; there is no "New" button in the FilterView or in the Imprisonment tab · an inmate is shown as citizen name + CASENUMBER of its court case · CITIZEN_ID is taken over from the court case and read-only (the case's CITIZEN_ID is locked after the verdict, so both can never drift) · CELL is one of <code>001</code>–<code>100</code>, picked from a dropdown (always three digits, so "1" and "001" can never count as different cells) and suggested automatically (see "CELL suggestion" below) · ADMISSIONDATE defaults to today and must not be before the VERDICTDATE · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case, read-only and recalculated whenever ADMISSIONDATE changes · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY, set only by ReleaseInmate_action (read-only in the EditView) so it can never drift from RELEASEDATE and the case status · RELEASEDATE set only by ReleaseInmate_action · JOB_ID = current job, or the last job after release; set or cleared only by AssignJob_action · audit fields as in J_COURTCASE.</p>
+    <p class="hint">One row = one imprisonment, at most one per court case. The row is created only through PronounceVerdict_action, which opens the EditView prefilled (no "New" button anywhere) · an inmate is shown as citizen name + CASENUMBER of its court case · CITIZEN_ID is taken over from the court case and read-only · CELL is picked from a dropdown <code>001</code>–<code>100</code> and suggested automatically (see "CELL suggestion" below) · ADMISSIONDATE defaults to today, not before VERDICTDATE · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case, read-only · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY · STATUS, RELEASEDATE and JOB_ID are set only by the actions (read-only in the EditView).</p>
   </div>
 </div>
 
@@ -197,8 +197,8 @@ flowchart LR
     <div class="where">New records only; the clerk can still change the suggested cell</div>
     <ul>
       <li>The prison has cells <code>001</code> to <code>100</code></li>
-      <li>Suggests the <b>lowest cell number that still has space</b> for this inmate's SECURITYLEVEL, using the same lib function as the cell validation below</li>
-      <li>If no cell has space, the field stays empty and the save fails with "No free cell left in the prison."</li>
+      <li>Suggests the <b>lowest cell number that still has space</b>, using the same rules as the cell validation below</li>
+      <li>If no cell has space, the field stays empty</li>
     </ul>
     <div class="scroll" style="margin-top:10px">
     <table class="ex">
@@ -210,23 +210,15 @@ flowchart LR
     </div>
   </div>
   <div class="note blue">
-    <h3>Read-only rules (stateProcess, J_COURTCASE)</h3>
-    <div class="where">Keeps the case consistent with its verdict and its inmate</div>
+    <h3>Read-only after the verdict (J_COURTCASE)</h3>
     <ul>
-      <li>While STATUS = FILED: every field except CASENUMBER, STATUS and the verdict fields is editable</li>
-      <li>From STATUS = SENTENCED or CLOSED: CASETYPE, CITIZEN_ID and COMPLAINT_ID are read-only. A changed defendant would no longer match J_INMATE.CITIZEN_ID, and a changed CASETYPE could contradict the verdict</li>
-      <li>Still editable after the verdict: TITLE, JUDGE, and RECEIVABLE_ID (only when VERDICT = FINE, because the bill is linked after the case was closed)</li>
+      <li>From STATUS = SENTENCED or CLOSED: CASETYPE, CITIZEN_ID and COMPLAINT_ID are read-only, so they can't contradict the verdict or the inmate</li>
+      <li>Still editable: TITLE, JUDGE, and RECEIVABLE_ID (FINE only)</li>
     </ul>
   </div>
 </div>
 
 <h2>Keyword Categories</h2>
-<div class="grid g2">
-  <div class="note blue">
-    <h3>How keyword values are stored</h3>
-    <p>Each keyword column (CASETYPE, STATUS, VERDICT, JUDGE, SECURITYLEVEL, STATUS on J_INMATE) stores the KEYID of the keyword entry as VARCHAR(36), never the display text. The entries live in AB_KEYWORD_CATEGORY / AB_KEYWORD_ENTRY and are seeded by a Liquibase changeset. Code refers to them only through a keyword registry lib, never through hard-coded strings. The display text comes from the translation files, so it can be changed without touching the data.</p>
-  </div>
-</div>
 <div class="grid kw">
   <div class="note blue">
     <h3>1 · CaseType</h3>
@@ -236,22 +228,22 @@ flowchart LR
   <div class="note blue">
     <h3>2 · CaseStatus</h3>
     <span class="pill">FILED</span><span class="pill">SENTENCED</span><span class="pill">CLOSED</span>
-    <p style="margin-top:6px">SENTENCED is used only while a prison sentence is running. Every other verdict closes the case at once. (Not named VERDICT, so "STATUS = …" can't be confused with the VERDICT field.)</p>
+    <p style="margin-top:6px">SENTENCED is used only while a prison sentence is running. Every other verdict closes the case at once.</p>
   </div>
   <div class="note blue">
     <h3>3 · VerdictType</h3>
     <span class="pill">ACQUITTAL</span><span class="pill">FINE</span><span class="pill">PROBATION</span><span class="pill">PRISON</span>
-    <p style="margin-top:6px">PRISON creates a J_INMATE row. PROBATION closes the case without tracking the probation period (see Out of Scope).</p>
+    <p style="margin-top:6px">PRISON creates a J_INMATE row.</p>
   </div>
   <div class="note blue">
     <h3>4 · Judge</h3>
     <span class="pill">Weber</span><span class="pill">Krüger</span><span class="pill">Aydin</span>
-    <p style="margin-top:6px">Judges are added as keyword entries in the keyword administration. Fixed name keywords are fragile in a real system (judges come and go) — fine for this training project, and no validation depends on specific judge names.</p>
+    <p style="margin-top:6px">Judges are maintained as keyword entries in the keyword administration.</p>
   </div>
   <div class="note red">
     <h3>5 · SecurityLevel</h3>
     <span class="pill">LOW</span><span class="pill">MEDIUM</span><span class="pill">HIGH</span>
-    <p style="margin-top:6px">Defaults to MEDIUM. HIGH means a cell of one's own (cell validation) and no work assignment (AssignJob_action, SECURITYLEVEL validation).</p>
+    <p style="margin-top:6px">Defaults to MEDIUM. HIGH means a cell of one's own and no work assignment.</p>
   </div>
   <div class="note red">
     <h3>6 · InmateStatus</h3>
@@ -268,7 +260,7 @@ flowchart LR
       <li>A citizen can have only one J_INMATE row with STATUS = IN_CUSTODY at a time.</li>
       <li>The row being edited is excluded from the check (J_INMATEID &lt;&gt; current), so saving an existing inmate does not fail on itself.</li>
       <li>Message: "{CITIZEN} is already in custody (case {CASENUMBER})."</li>
-      <li>Policy: a citizen in custody cannot receive a second prison sentence. The second case stays FILED until the citizen is released (no consecutive sentences, see Out of Scope).</li>
+      <li>So a citizen in custody can't receive a second prison sentence; that case stays FILED until the release.</li>
     </ul>
   </div>
   <div class="note red">
@@ -277,9 +269,9 @@ flowchart LR
       <li>At most 2 inmates with STATUS = IN_CUSTODY per CELL.</li>
       <li>An inmate with SECURITYLEVEL = HIGH never shares a cell: neither can a HIGH inmate move into an occupied cell, nor anyone into a cell with a HIGH inmate.</li>
       <li>The inmate being edited is not counted (J_INMATEID &lt;&gt; current); otherwise editing an inmate in a full cell would fail.</li>
-      <li>Runs on SECURITYLEVEL as well, because raising an inmate to HIGH changes whether the cell may be shared. Both onValidation.js files call one shared lib function, which the CELL suggestion uses too.</li>
-      <li>SECURITYLEVEL only: HIGH is rejected while JOB_ID is set on an inmate IN_CUSTODY.</li>
-      <li>Messages: "Cell {CELL} is full. Please choose a different cell." · "Cell {CELL} is occupied. An inmate with security level HIGH needs a cell of their own." · "Remove the job assignment before setting security level HIGH."</li>
+      <li>Runs on SECURITYLEVEL as well, because raising an inmate to HIGH changes whether the cell may be shared.</li>
+      <li>SECURITYLEVEL only: HIGH is rejected while the inmate has a job.</li>
+      <li>Messages: "Cell {CELL} is full. Please choose a different cell." · "An inmate with security level HIGH needs a cell of their own." · "Remove the job before setting security level HIGH."</li>
     </ul>
   </div>
 </div>
@@ -293,9 +285,8 @@ flowchart LR
       <li>Allowed only while STATUS = FILED</li>
       <li>Dialog: pick VERDICT (choices depend on CASETYPE). FINE also asks for FINEAMOUNT, PRISON for SENTENCEMONTHS</li>
       <li><b>FINE, ACQUITTAL, PROBATION:</b> saves VERDICT, VERDICTDATE = now (and FINEAMOUNT for FINE), STATUS = CLOSED</li>
-      <li><b>PRISON:</b> error if the citizen is already in custody. Otherwise the action writes <b>nothing</b> to the case yet: it opens the inmate EditView prefilled (case, citizen, sentence months as parameters); the clerk picks SECURITYLEVEL and saves</li>
-      <li>The inmate's afterSave then writes VERDICT = PRISON, VERDICTDATE, SENTENCEMONTHS and STATUS = SENTENCED to the case</li>
-      <li>If the form is cancelled, nothing has changed: the case is still FILED and the action can simply be run again. So a case can never be stuck with a prison verdict but no inmate</li>
+      <li><b>PRISON:</b> error if the citizen is already in custody. Otherwise the inmate form opens prefilled; the clerk picks SECURITYLEVEL and saves</li>
+      <li>Only when the inmate is saved (onDBInsert) does the case get VERDICT = PRISON, VERDICTDATE, SENTENCEMONTHS and STATUS = SENTENCED. If the form is cancelled, the case stays FILED</li>
     </ul>
   </div>
   <div class="note yellow">
@@ -303,9 +294,8 @@ flowchart LR
     <div class="where">On J_INMATE</div>
     <ul>
       <li>Allowed only for STATUS = IN_CUSTODY and SECURITYLEVEL ≠ HIGH</li>
-      <li>Lookup shows only open jobs of the Jobs module (what "open" means is agreed with Julia, see Interfaces)</li>
-      <li>Writes the selected job to JOB_ID, replacing any current job; an empty selection removes the assignment</li>
-      <li>JOB_ID holds only the current (or last) job; a full job history is out of scope</li>
+      <li>Lookup shows only open jobs of the Jobs module</li>
+      <li>Writes the selected job to JOB_ID; an empty selection removes the job</li>
     </ul>
   </div>
   <div class="note yellow">
@@ -325,10 +315,8 @@ flowchart LR
 <div class="grid g2">
   <div class="note teal">
     <h3>remainingDays (No database column needed!)</h3>
-    <div class="where">On J_INMATE, valueProcess, read-only, shown while STATUS = IN_CUSTODY</div>
-<pre>remainingDays = max(days from today to $field.PLANNEDRELEASEDATE, 0)
-// calculated in JS from the record's own field (DateUtils),
-// no extra SQL query per row in the FilterView</pre>
+    <div class="where">On J_INMATE, SQL expression, read-only, shown while STATUS = IN_CUSTODY</div>
+<pre>GREATEST(DATEDIFF(J_INMATE.PLANNEDRELEASEDATE, CURRENT_DATE), 0)</pre>
     <p style="margin-top:10px">Example: admission 2026-09-01, 6 months → planned release 2027-03-01. On 2026-10-12 the view shows <b>140 days</b>.</p>
   </div>
 </div>
@@ -338,7 +326,7 @@ flowchart LR
   <div class="note blue">
     <h3>Court case Main view tabs</h3>
     <ul>
-      <li>Imprisonment (J_Inmate consumer, 0 or 1 row, no "New" button)</li>
+      <li>Imprisonment (J_Inmate consumer, 0 or 1 row)</li>
       <li>Documents (indictment, verdict)</li>
       <li>Log</li>
     </ul>
@@ -382,8 +370,6 @@ flowchart LR
       <li>Incidents that raise SECURITYLEVEL</li>
       <li>Crediting pre-trial detention against the sentence</li>
       <li>Consecutive sentences for a citizen who is already in custody</li>
-      <li>Probation period (length, end date) for PROBATION verdicts</li>
-      <li>Full job history per inmate</li>
     </ul>
   </div>
 </div>
