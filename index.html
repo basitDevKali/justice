@@ -301,7 +301,7 @@ flowchart LR
     <h3>ReleaseInmate_action</h3>
     <div class="where">On J_INMATE</div>
     <ul>
-      <li>Started manually by the clerk, there is no background job. Due and overdue releases are listed in the "Justice today" dashlet</li>
+      <li>Started manually by the clerk, there is no background job</li>
       <li>Writes today's date to RELEASEDATE</li>
       <li>Allowed only for STATUS = IN_CUSTODY</li>
       <li>Before PLANNEDRELEASEDATE: STATUS = RELEASED_EARLY, otherwise STATUS = RELEASED</li>
@@ -323,7 +323,7 @@ WHERE  J_INMATEID = :currentInmate</pre>
 </div>
 
 <h2>Features</h2>
-<div class="grid g3">
+<div class="grid g2">
   <div class="note blue">
     <h3>Court case Main view tabs</h3>
     <ul>
@@ -339,13 +339,6 @@ WHERE  J_INMATEID = :currentInmate</pre>
       <li>Activities (visits, incidents)</li>
       <li>Documents</li>
       <li>Log</li>
-    </ul>
-  </div>
-  <div class="note stone">
-    <h3>For the other modules</h3>
-    <ul>
-      <li>Citizen in Bürger gets tabs "Court cases" and "Imprisonments" (or a 360° entry)</li>
-      <li>Dashlet "Justice today": open cases (STATUS = FILED), inmates in custody, releases in the next 30 days, overdue releases (PLANNEDRELEASEDATE passed, still IN_CUSTODY)</li>
     </ul>
   </div>
 </div>
@@ -385,7 +378,7 @@ WHERE  J_INMATEID = :currentInmate</pre>
   <div class="scroll">
   <table class="ex">
     <tr><th>Partner module</th><th>Justice uses</th><th>Justice offers</th></tr>
-    <tr><td>Bürger · Hannes</td><td>Citizen table + lookup consumer (CITIZEN_ID)</td><td>Criminal record request, tabs for the citizen view</td></tr>
+    <tr><td>Bürger · Hannes</td><td>Citizen table + lookup consumer (CITIZEN_ID)</td><td>Criminal record request</td></tr>
     <tr><td>Finanzen · Hannes</td><td>createReceivable for fines</td><td>Back reference RECEIVABLE_ID on the case</td></tr>
     <tr><td>Jobs · Julia</td><td>Job consumer filtered to open jobs (JOB_ID). To clarify: does "Jobs" mean job postings or municipal work orders? Prison work fits both; the background check only fits postings.</td><td>Criminal record request for background checks</td></tr>
     <tr><td>Beschwerdemanagement · Julia</td><td>Complaint lookup (COMPLAINT_ID). The complaint must record which citizen it is about.</td><td>Create-case endpoint for escalation</td></tr>
@@ -406,7 +399,6 @@ WHERE  J_INMATEID = :currentInmate</pre>
       <li>Prison visits registered by citizens of the Bürger module</li>
       <li>Incidents that raise SECURITYLEVEL</li>
       <li>Crediting pre-trial detention against the sentence</li>
-      <li>Unpaid fines from Finanzen in the dashlet</li>
     </ul>
   </div>
 </div>
