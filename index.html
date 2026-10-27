@@ -148,11 +148,8 @@ flowchart LR
   C -- "RECEIVABLE_ID (fine)" --> F
   C -- "COMPLAINT_ID" --> K
   P -- "JOB_ID (work assignment)" --> J
-  K -. "create case (escalation)" .-> C
-  J -. "asks for criminal record" .-> C
-  B -. "asks for criminal record" .-> C
 </pre>
-<p class="hint" style="color:var(--ink-soft)">Solid arrow = foreign key: it starts at the Justice table that stores the key and points to the record it references. Dashed arrow = request: another module asks Justice for information or asks it to do something. The arrow starts at the module that asks.</p>
+<p class="hint" style="color:var(--ink-soft)">Each arrow is a foreign key: it starts at the Justice table that stores the key and points to the record it references.</p>
 
 <h2>Tables</h2>
 <div class="grid g2">
@@ -173,7 +170,7 @@ flowchart LR
     <div class="row"><div class="key empty"></div><div class="fld">FINEAMOUNT</div><div class="typ">DECIMAL(10,2)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">SENTENCEMONTHS</div><div class="typ">INT</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">Audit fields<small>DATE_NEW, DATE_EDIT, USER_NEW, USER_EDIT</small></div><div class="typ">standard</div></div>
-    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · DATE_NEW is the filing date of the case · STATUS is set only by the actions (read-only in the EditView) · VERDICT, VERDICTDATE, FINEAMOUNT, SENTENCEMONTHS and RECEIVABLE_ID are set only by PronounceVerdict_action · status flow: FILED → CLOSED, or FILED → VERDICT → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID is filled when a case is escalated from Complaint Management · audit fields maintained automatically by ADITO.</p>
+    <p class="hint">CASENUMBER is generated on insert (<code>J-2026-0001</code>, running number per year) and read-only · CASETYPE → Keyword CaseType · JUDGE → Keyword Judge · STATUS → Keyword CaseStatus, defaults to FILED · VERDICT → Keyword VerdictType · DATE_NEW is the filing date of the case · STATUS is set only by the actions (read-only in the EditView) · VERDICT, VERDICTDATE, FINEAMOUNT and SENTENCEMONTHS are set only by PronounceVerdict_action · RECEIVABLE_ID (optional) is picked via a lookup on the bills in Finanzen, after the bill for a fine was created there · status flow: FILED → CLOSED, or FILED → VERDICT → CLOSED on release for a prison sentence · CITIZEN_ID is the defendant, picked via a lookup on the citizens of the Bürger module · COMPLAINT_ID (optional) is picked via a lookup on the complaints of Complaint Management when a case comes from a complaint · audit fields maintained automatically by ADITO.</p>
   </div>
 
   <div class="tbl red">
@@ -223,7 +220,7 @@ flowchart LR
   <div class="note blue">
     <h3>1 · CaseType</h3>
     <span class="pill">CRIMINAL</span><span class="pill">ADMINISTRATIVE</span>
-    <p style="margin-top:6px">CRIMINAL allows every verdict. ADMINISTRATIVE (e.g. an escalated complaint) allows only ACQUITTAL or FINE.</p>
+    <p style="margin-top:6px">CRIMINAL allows every verdict. ADMINISTRATIVE (e.g. a case from a complaint) allows only ACQUITTAL or FINE.</p>
   </div>
   <div class="note blue">
     <h3>2 · CaseStatus</h3>
@@ -233,7 +230,7 @@ flowchart LR
   <div class="note blue">
     <h3>3 · VerdictType</h3>
     <span class="pill">ACQUITTAL</span><span class="pill">FINE</span><span class="pill">PROBATION</span><span class="pill">PRISON</span>
-    <p style="margin-top:6px">FINE creates a receivable in Finanzen, PRISON creates a J_INMATE row.</p>
+    <p style="margin-top:6px">PRISON creates a J_INMATE row.</p>
   </div>
   <div class="note blue">
     <h3>4 · Judge</h3>
@@ -277,15 +274,14 @@ flowchart LR
 <h2>Actions</h2>
 <div class="grid g2">
   <div class="note yellow">
-    <h3>PronounceVerdict_action <span class="tag">links Gericht → Gefängnis + Finanzen</span></h3>
+    <h3>PronounceVerdict_action <span class="tag">links Gericht → Gefängnis</span></h3>
     <div class="where">On J_COURTCASE</div>
     <ul>
       <li>Allowed only while STATUS = FILED</li>
       <li>Dialog: pick VERDICT (choices depend on CASETYPE). FINE also asks for FINEAMOUNT, PRISON for SENTENCEMONTHS</li>
       <li>Saves VERDICT and VERDICTDATE = now</li>
-      <li><b>FINE:</b> Finanzen creates a bill, its id goes into RECEIVABLE_ID → STATUS = CLOSED</li>
+      <li><b>FINE, ACQUITTAL, PROBATION:</b> STATUS = CLOSED</li>
       <li><b>PRISON:</b> error if the citizen is already in custody. Otherwise STATUS = VERDICT and the inmate form opens prefilled; the clerk picks SECURITYLEVEL and saves. If the form is cancelled, the "New" button in the Imprisonment tab opens it again</li>
-      <li><b>ACQUITTAL / PROBATION:</b> STATUS = CLOSED</li>
     </ul>
   </div>
   <div class="note yellow">
@@ -343,45 +339,16 @@ WHERE  J_INMATEID = :currentInmate</pre>
   </div>
 </div>
 
-<h2>Requests Between Modules</h2>
-<div class="grid g3">
-  <div class="note stone">
-    <h3>J_CriminalRecord_rest <span class="tag">offered</span></h3>
-    <p><b>In plain words:</b> "Has this person ever been convicted?"</p>
-    <div class="where">Another module asks with: a citizen</div>
-    <p>Justice answers with the citizen's prior convictions and whether they are in custody right now.</p>
-    <p style="margin-top:8px"><b>Example answer:</b> not in custody right now, 1 conviction:</p>
-    <div class="scroll">
-    <table class="ex">
-      <tr><th>CASE</th><th>VERDICT</th><th>DATE</th></tr>
-      <tr><td>J-2026-0004</td><td>PROBATION</td><td>17/04/2026</td></tr>
-    </table>
-    </div>
-    <p style="margin-top:8px">DATE is the day of the verdict (the full VERDICTDATE timestamp is returned in ISO format, e.g. <code>2026-04-17T10:30:00</code>; consumers display only the day). Used by Jobs (background check of applicants) and Bürger (certificate of good conduct).</p>
-  </div>
-  <div class="note stone">
-    <h3>J_CourtCase_rest <span class="tag">offered</span></h3>
-    <p><b>In plain words:</b> "Please open a court case for this complaint."</p>
-    <div class="where">Another module asks Justice to: create a court case</div>
-    <p>Complaint Management escalates a complaint to court. It sends COMPLAINT_ID, CITIZEN_ID (the person the complaint is about, not the person who complained) and TITLE. The case starts with CASETYPE = ADMINISTRATIVE and STATUS = FILED, and the response returns the CASENUMBER.</p>
-  </div>
-  <div class="note stone">
-    <h3>Finanzen · createReceivable <span class="tag">needed from Hannes</span></h3>
-    <p><b>In plain words:</b> "Please send this citizen a bill for the fine." A receivable is a bill that someone still has to pay.</p>
-    <div class="where">Justice asks Finanzen, from PronounceVerdict_action</div>
-    <p>Justice sends CITIZEN_ID, the amount and a reason ("Fine J-2026-0012"). Finanzen creates the bill and answers with its id, which Justice stores in RECEIVABLE_ID.</p>
-  </div>
-</div>
 
 <h2>Interfaces to Agree on 16.10.</h2>
 <div class="note stone">
   <div class="scroll">
   <table class="ex">
     <tr><th>Partner module</th><th>Justice uses</th><th>Justice offers</th></tr>
-    <tr><td>Bürger · Hannes</td><td>Citizen table + lookup consumer (CITIZEN_ID)</td><td>Criminal record request</td></tr>
-    <tr><td>Finanzen · Hannes</td><td>createReceivable for fines</td><td>Back reference RECEIVABLE_ID on the case</td></tr>
-    <tr><td>Jobs · Julia</td><td>Job consumer filtered to open jobs (JOB_ID). To clarify: does "Jobs" mean job postings or municipal work orders? Prison work fits both; the background check only fits postings.</td><td>Criminal record request for background checks</td></tr>
-    <tr><td>Beschwerdemanagement · Julia</td><td>Complaint lookup (COMPLAINT_ID). The complaint must record which citizen it is about.</td><td>Create-case endpoint for escalation</td></tr>
+    <tr><td>Bürger · Hannes</td><td>Citizen table + lookup consumer (CITIZEN_ID)</td><td>—</td></tr>
+    <tr><td>Finanzen · Hannes</td><td>Bill lookup consumer (RECEIVABLE_ID)</td><td>—</td></tr>
+    <tr><td>Jobs · Julia</td><td>Job consumer filtered to open jobs (JOB_ID). To clarify: does "Jobs" mean job postings or municipal work orders?</td><td>—</td></tr>
+    <tr><td>Beschwerdemanagement · Julia</td><td>Complaint lookup consumer (COMPLAINT_ID)</td><td>—</td></tr>
   </table>
   </div>
   <p class="hint" style="color:var(--stone-ink)">CITIZEN_ID, COMPLAINT_ID, JOB_ID and RECEIVABLE_ID are placeholder names until the partner tables are named.</p>
@@ -391,7 +358,7 @@ WHERE  J_INMATEID = :currentInmate</pre>
 <div class="grid g2">
   <div class="note stone">
     <h3>Correcting or appealing a verdict</h3>
-    <p>A pronounced verdict is final in this module. There is no action to revoke or change it, because that would also have to undo the receivable in Finanzen and the J_INMATE row. The Log tab shows who pronounced which verdict and when.</p>
+    <p>A pronounced verdict is final in this module. There is no action to revoke or change it, because that would also have to undo the J_INMATE row. The Log tab shows who pronounced which verdict and when.</p>
   </div>
   <div class="note stone">
     <h3>Ideas for later</h3>
@@ -405,11 +372,11 @@ WHERE  J_INMATEID = :currentInmate</pre>
 
 <h2>Naming Conventions</h2>
 <p style="font-size:14px;max-width:90ch">
-  <code>J_</code> Justice (table prefix) · <code>_ID</code> Foreign-key suffix · PK Primary Key · FK Foreign Key · <code>_action</code> Action suffix (CamelCase, no prefix) · <code>_view</code> View suffix · <code>_param</code> Parameter suffix · <code>_rest</code> Webservice suffix · Keyword containers in CamelCase · validations get no separate name — each is just the field's own onValidation.js
+  <code>J_</code> Justice (table prefix) · <code>_ID</code> Foreign-key suffix · PK Primary Key · FK Foreign Key · <code>_action</code> Action suffix (CamelCase, no prefix) · <code>_view</code> View suffix · <code>_param</code> Parameter suffix · Keyword containers in CamelCase · validations get no separate name — each is just the field's own onValidation.js
 </p>
 
 <footer>
-  TODO for 16.10. covered: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · features · 2 requests offered + 1 needed · 2 validations · 1 calculated display value · 6 keyword categories.
+  TODO for 16.10. covered: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · features · 2 validations · 1 calculated display value · 6 keyword categories.
 </footer>
 </div>
 <script type="module">
