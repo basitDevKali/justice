@@ -322,27 +322,6 @@ WHERE  J_INMATEID = :currentInmate</pre>
   </div>
 </div>
 
-<h2>Index (Global Search)</h2>
-<div class="grid g2">
-  <div class="note blue">
-    <h3>J_CourtCase · indexRecordContainer</h3>
-    <ul>
-      <li>Index group <code>Justice</code></li>
-      <li>Searchable: CASENUMBER, TITLE, citizen name (join to Bürger), JUDGE, CASETYPE</li>
-      <li>Hit shows "J-2026-0012 · Noise complaint Hauptstraße"</li>
-      <li>affectedIds also react to a name change of the citizen in the Bürger module</li>
-    </ul>
-  </div>
-  <div class="note red">
-    <h3>J_Inmate · indexRecordContainer</h3>
-    <ul>
-      <li>Index group <code>Justice</code></li>
-      <li>Searchable: CASENUMBER (join to J_COURTCASE), citizen name, CELL, STATUS</li>
-      <li>Hit shows "J-2026-0012 · Ali Demir · Cell 012"</li>
-    </ul>
-  </div>
-</div>
-
 <h2>Features</h2>
 <div class="grid g3">
   <div class="note blue">
@@ -438,7 +417,7 @@ WHERE  J_INMATEID = :currentInmate</pre>
 </p>
 
 <footer>
-  TODO for 16.10. covered: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · 2 index containers · features · 2 requests offered + 1 needed · 2 validations · 1 calculated display value · 6 keyword categories.
+  TODO for 16.10. covered: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · features · 2 requests offered + 1 needed · 2 validations · 1 calculated display value · 6 keyword categories.
 </footer>
 </div>
 <script type="module">
