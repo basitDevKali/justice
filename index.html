@@ -152,7 +152,7 @@ flowchart LR
   J -. "criminal record" .-> C
   B -. "criminal record" .-> C
 </pre>
-<p class="hint" style="color:var(--ink-soft)">Solid arrow = foreign key: it starts at the Justice table that stores the key and points to the record it references. Dashed arrow = webservice call: it starts at the module that calls and points to the Justice webservice it uses.</p>
+<p class="hint" style="color:var(--ink-soft)">Solid arrow = foreign key: it starts at the Justice table that stores the key and points to the record it references. Dashed arrow = request: another module asks Justice for information or asks it to do something. The arrow starts at the module that asks.</p>
 
 <h2>Tables</h2>
 <div class="grid g2">
@@ -397,12 +397,12 @@ WHERE  CITIZEN_ID = :currentCitizen
   </div>
 </div>
 
-<h2>Webservices</h2>
+<h2>Requests Between Modules</h2>
 <div class="grid g3">
   <div class="note stone">
     <h3>J_CriminalRecord_rest <span class="tag">offered</span></h3>
-    <div class="where">GET ?citizenId=…</div>
-    <p>Returns prior convictions and whether the citizen is in custody.</p>
+    <div class="where">Another module asks with: a citizen</div>
+    <p>Justice answers with the citizen's prior convictions and whether they are in custody right now.</p>
 <pre>{ "inCustody": false,
   "convictions": [
     { "case": "J-2026-0004",
@@ -412,13 +412,13 @@ WHERE  CITIZEN_ID = :currentCitizen
   </div>
   <div class="note stone">
     <h3>J_CourtCase_rest <span class="tag">offered</span></h3>
-    <div class="where">POST · create case</div>
-    <p>Complaint Management escalates a complaint to court. Body: COMPLAINT_ID, CITIZEN_ID (the person the complaint is about, not the person who complained), TITLE. The case starts with CASETYPE = ADMINISTRATIVE and STATUS = FILED, and the response returns the CASENUMBER.</p>
+    <div class="where">Another module asks Justice to: create a court case</div>
+    <p>Complaint Management escalates a complaint to court. It sends COMPLAINT_ID, CITIZEN_ID (the person the complaint is about, not the person who complained) and TITLE. The case starts with CASETYPE = ADMINISTRATIVE and STATUS = FILED, and the response returns the CASENUMBER.</p>
   </div>
   <div class="note stone">
     <h3>Finanzen · createReceivable <span class="tag">needed from Hannes</span></h3>
-    <div class="where">Service or REST, called by PronounceVerdict_action</div>
-    <p>Input: CITIZEN_ID, amount, reason ("Fine J-2026-0012"). Output: id of the receivable, stored in RECEIVABLE_ID.</p>
+    <div class="where">Justice asks Finanzen, from PronounceVerdict_action</div>
+    <p>Justice sends CITIZEN_ID, the amount and a reason ("Fine J-2026-0012"). Finanzen creates the bill and answers with its id, which Justice stores in RECEIVABLE_ID.</p>
   </div>
 </div>
 
@@ -427,9 +427,9 @@ WHERE  CITIZEN_ID = :currentCitizen
   <div class="scroll">
   <table class="ex">
     <tr><th>Partner module</th><th>Justice uses</th><th>Justice offers</th></tr>
-    <tr><td>Bürger · Hannes</td><td>Citizen table + lookup consumer (CITIZEN_ID)</td><td>Criminal record webservice, tabs for the citizen view</td></tr>
+    <tr><td>Bürger · Hannes</td><td>Citizen table + lookup consumer (CITIZEN_ID)</td><td>Criminal record request, tabs for the citizen view</td></tr>
     <tr><td>Finanzen · Hannes</td><td>createReceivable for fines</td><td>Back reference RECEIVABLE_ID on the case</td></tr>
-    <tr><td>Jobs · Julia</td><td>Job consumer filtered to open jobs (JOB_ID). To clarify: does "Jobs" mean job postings or municipal work orders? Prison work fits both; the background check only fits postings.</td><td>Criminal record webservice for background checks</td></tr>
+    <tr><td>Jobs · Julia</td><td>Job consumer filtered to open jobs (JOB_ID). To clarify: does "Jobs" mean job postings or municipal work orders? Prison work fits both; the background check only fits postings.</td><td>Criminal record request for background checks</td></tr>
     <tr><td>Beschwerdemanagement · Julia</td><td>Complaint lookup (COMPLAINT_ID). The complaint must record which citizen it is about.</td><td>Create-case endpoint for escalation</td></tr>
   </table>
   </div>
@@ -459,7 +459,7 @@ WHERE  CITIZEN_ID = :currentCitizen
 </p>
 
 <footer>
-  TODO for 16.10. covered: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 4 actions · 2 index containers · features · 2 offered webservices + 1 needed · 3 validations · 2 calculated display values · 6 keyword categories.
+  TODO for 16.10. covered: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 4 actions · 2 index containers · features · 2 requests offered + 1 needed · 3 validations · 2 calculated display values · 6 keyword categories.
 </footer>
 </div>
 <script type="module">
