@@ -401,22 +401,27 @@ WHERE  CITIZEN_ID = :currentCitizen
 <div class="grid g3">
   <div class="note stone">
     <h3>J_CriminalRecord_rest <span class="tag">offered</span></h3>
+    <p><b>In plain words:</b> "Has this person ever been convicted?"</p>
     <div class="where">Another module asks with: a citizen</div>
     <p>Justice answers with the citizen's prior convictions and whether they are in custody right now.</p>
-<pre>{ "inCustody": false,
-  "convictions": [
-    { "case": "J-2026-0004",
-      "verdict": "PROBATION",
-      "date": "2026-04-17" } ] }</pre>
-    <p style="margin-top:8px">"date" is the date part of VERDICTDATE. Used by Jobs (background check of applicants) and Bürger (certificate of good conduct).</p>
+    <p style="margin-top:8px"><b>Example answer:</b> not in custody right now, 1 conviction:</p>
+    <div class="scroll">
+    <table class="ex">
+      <tr><th>CASE</th><th>VERDICT</th><th>DATE</th></tr>
+      <tr><td>J-2026-0004</td><td>PROBATION</td><td>17/04/2026</td></tr>
+    </table>
+    </div>
+    <p style="margin-top:8px">DATE is the day of the verdict. Used by Jobs (background check of applicants) and Bürger (certificate of good conduct).</p>
   </div>
   <div class="note stone">
     <h3>J_CourtCase_rest <span class="tag">offered</span></h3>
+    <p><b>In plain words:</b> "Please open a court case for this complaint."</p>
     <div class="where">Another module asks Justice to: create a court case</div>
     <p>Complaint Management escalates a complaint to court. It sends COMPLAINT_ID, CITIZEN_ID (the person the complaint is about, not the person who complained) and TITLE. The case starts with CASETYPE = ADMINISTRATIVE and STATUS = FILED, and the response returns the CASENUMBER.</p>
   </div>
   <div class="note stone">
     <h3>Finanzen · createReceivable <span class="tag">needed from Hannes</span></h3>
+    <p><b>In plain words:</b> "Please send this citizen a bill for the fine." A receivable is a bill that someone still has to pay.</p>
     <div class="where">Justice asks Finanzen, from PronounceVerdict_action</div>
     <p>Justice sends CITIZEN_ID, the amount and a reason ("Fine J-2026-0012"). Finanzen creates the bill and answers with its id, which Justice stores in RECEIVABLE_ID.</p>
   </div>
