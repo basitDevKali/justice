@@ -261,7 +261,7 @@ flowchart LR
     </ul>
   </div>
   <div class="note red">
-    <h3>onValidation on CELL and SECURITYLEVEL, J_INMATE</h3>
+    <h3>onValidation on CELL, J_INMATE</h3>
     <ul>
       <li>A cell holds at most 2 inmates; an inmate with SECURITYLEVEL = HIGH always gets a cell of their own.</li>
       <li>Looks at the <b>other</b> inmates in the chosen CELL with STATUS = IN_CUSTODY (the inmate being edited is not counted). Error if:
@@ -271,8 +271,14 @@ flowchart LR
           <li>this inmate is HIGH and the cell is not empty: "An inmate with security level HIGH needs a cell of their own."</li>
         </ul>
       </li>
-      <li>The same check runs on both fields, because changing either one can break the rule.</li>
-      <li>SECURITYLEVEL only: HIGH is not allowed while the inmate has a job: "Remove the job before setting security level HIGH."</li>
+    </ul>
+  </div>
+  <div class="note red">
+    <h3>onValidation on SECURITYLEVEL, J_INMATE</h3>
+    <ul>
+      <li>Runs only when SECURITYLEVEL = HIGH. LOW and MEDIUM are always allowed</li>
+      <li>Error if another inmate with STATUS = IN_CUSTODY is in the same CELL: "An inmate with security level HIGH needs a cell of their own." (same check as on CELL, because raising an inmate to HIGH can break the rule without changing the cell)</li>
+      <li>Error if the inmate has a job: "Remove the job before setting security level HIGH."</li>
     </ul>
   </div>
 </div>
@@ -284,7 +290,7 @@ flowchart LR
     <div class="where">On J_COURTCASE · for ACQUITTAL, FINE, PROBATION</div>
     <ul>
       <li>Allowed only while STATUS = FILED</li>
-      <li>Opens the small helper context J_PronounceVerdict (EditView, new record) with the case as parameter. An action can't show input fields itself</li>
+      <li>Opens the small helper context J_PronounceVerdict (EditView, new record) with the case as parameter.</li>
       <li>There the clerk picks VERDICT (CRIMINAL: all three, ADMINISTRATIVE: ACQUITTAL or FINE) and, for FINE, enters FINEAMOUNT</li>
       <li>On save, the helper writes VERDICT, VERDICTDATE = now, FINEAMOUNT (FINE only) and STATUS = CLOSED to the case. Cancel changes nothing</li>
     </ul>
@@ -377,7 +383,7 @@ flowchart LR
 </p>
 
 <footer>
-  Concept covers: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, Imprison_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · features · 2 validations · 1 calculated display value · 6 keyword categories.
+  Concept covers: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, Imprison_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · features · 3 validations · 1 calculated display value · 6 keyword categories.
 </footer>
 </div>
 <script type="module">
