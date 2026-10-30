@@ -255,8 +255,8 @@ flowchart LR
 <div class="grid g2">
   <div class="note red">
     <h3>onValidation on CITIZEN_ID, J_INMATE</h3>
+    <p style="margin:6px 0"><b>Prevents a citizen from being in prison twice at the same time.</b></p>
     <ul>
-      <li>A citizen can be IN_CUSTODY only once at a time.</li>
       <li>Error if another J_INMATE row of the same citizen has STATUS = IN_CUSTODY.</li>
       <li>Only relevant for a new inmate, because CITIZEN_ID is read-only afterwards. Imprison_action already blocks this; the validation is the safety net, e.g. when two cases of the same citizen get a PRISON verdict at the same time.</li>
       <li>Message: "{CITIZEN} is already in custody (case {CASENUMBER})."</li>
@@ -264,8 +264,8 @@ flowchart LR
   </div>
   <div class="note red">
     <h3>onValidation on CELL, J_INMATE</h3>
+    <p style="margin:6px 0"><b>Keeps a cell at 2 inmates at most, and a HIGH inmate alone.</b></p>
     <ul>
-      <li>A cell holds at most 2 inmates; an inmate with SECURITYLEVEL = HIGH always gets a cell of their own.</li>
       <li>Looks at the <b>other</b> inmates in the chosen CELL with STATUS = IN_CUSTODY (the inmate being edited is not counted). Error if:
         <ul>
           <li>one of them is HIGH: "Cell {CELL} is occupied by an inmate with security level HIGH."</li>
@@ -277,6 +277,7 @@ flowchart LR
   </div>
   <div class="note red">
     <h3>onValidation on SECURITYLEVEL, J_INMATE</h3>
+    <p style="margin:6px 0"><b>Allows HIGH only if the inmate is alone in the cell and has no job.</b></p>
     <ul>
       <li>Runs only when SECURITYLEVEL = HIGH. LOW and MEDIUM are always allowed</li>
       <li>Error if another inmate with STATUS = IN_CUSTODY is in the same CELL: "An inmate with security level HIGH needs a cell of their own." (same check as on CELL, because raising an inmate to HIGH can break the rule without changing the cell)</li>
