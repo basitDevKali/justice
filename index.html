@@ -193,10 +193,12 @@ flowchart LR
 
 <div class="grid g2">
   <div class="note blue">
-    <h3>Read-only after the verdict (J_COURTCASE)</h3>
+    <h3>Court case: locked fields after the verdict</h3>
+    <div class="where">stateProcess on the fields, J_COURTCASE</div>
     <ul>
-      <li>From STATUS = SENTENCED or CLOSED: CASETYPE, CITIZEN_ID and COMPLAINT_ID are read-only, so they can't contradict the verdict or the inmate</li>
-      <li>Still editable: TITLE, JUDGE, and RECEIVABLE_ID (FINE only)</li>
+      <li>Once the verdict is pronounced (STATUS = SENTENCED or CLOSED), these fields can no longer be changed: CASETYPE, CITIZEN_ID, COMPLAINT_ID</li>
+      <li>Why: the verdict and the inmate are based on these values. Changing them later would make the data no longer match</li>
+      <li>Can still be changed: TITLE, JUDGE, and RECEIVABLE_ID (only for FINE, to link the bill later)</li>
     </ul>
   </div>
   <div class="note red">
