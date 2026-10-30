@@ -187,7 +187,7 @@ flowchart LR
     <div class="row"><div class="key empty"></div><div class="fld">RELEASEDATE</div><div class="typ">DATE</div></div>
     <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">STATUS</div><div class="typ">VARCHAR(36)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">Audit fields<small>DATE_NEW, DATE_EDIT, USER_NEW, USER_EDIT</small></div><div class="typ">standard</div></div>
-    <p class="hint">One row = one imprisonment, at most one per court case. The row is created only through PronounceVerdict_action, which opens the EditView prefilled (no "New" button anywhere) · an inmate is shown as citizen name + CASENUMBER of its court case · CITIZEN_ID is taken over from the court case and read-only · CELL is picked from a dropdown <code>001</code>–<code>100</code> and suggested automatically (see "CELL suggestion" below) · ADMISSIONDATE defaults to today, not before VERDICTDATE · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case, read-only · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY · STATUS, RELEASEDATE and JOB_ID are set only by the actions (read-only in the EditView) · once STATUS is RELEASED or RELEASED_EARLY, the whole record is read-only.</p>
+    <p class="hint">One row = one imprisonment, at most one per court case. The row is created only through PronounceVerdict_action, which opens the EditView prefilled (no "New" button anywhere) · an inmate is shown as citizen name + CASENUMBER of its court case · CITIZEN_ID is taken over from the court case and read-only · CELL is picked from a dropdown <code>001</code>–<code>100</code> and suggested automatically (see "CELL suggestion" below) · ADMISSIONDATE defaults to today, not before the day of VERDICTDATE (compare days only, VERDICTDATE also has a time) · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case, read-only · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY · STATUS, RELEASEDATE and JOB_ID are set only by the actions (read-only in the EditView) · once STATUS is RELEASED or RELEASED_EARLY, the whole record is read-only.</p>
   </div>
 </div>
 
@@ -285,9 +285,10 @@ flowchart LR
     <ul>
       <li>Allowed only while STATUS = FILED</li>
       <li>Dialog: pick VERDICT (choices depend on CASETYPE). FINE also asks for FINEAMOUNT, PRISON for SENTENCEMONTHS</li>
-      <li><b>FINE, ACQUITTAL, PROBATION:</b> saves VERDICT, VERDICTDATE = now (and FINEAMOUNT for FINE), STATUS = CLOSED</li>
-      <li><b>PRISON:</b> error if the citizen is already in custody; the case then stays FILED until the release (no second prison sentence). Otherwise the inmate form opens prefilled; the clerk picks SECURITYLEVEL and saves</li>
-      <li>Only when the inmate is saved (onDBInsert) does the case get VERDICT = PRISON, VERDICTDATE, SENTENCEMONTHS and STATUS = SENTENCED. If the form is cancelled, the case stays FILED</li>
+      <li><b>ACQUITTAL, FINE, PROBATION:</b> saves VERDICT, VERDICTDATE = now (and FINEAMOUNT for FINE) and sets STATUS = CLOSED</li>
+      <li><b>PRISON, citizen already in custody:</b> error, the case stays FILED. The verdict can be pronounced after the release</li>
+      <li><b>PRISON, otherwise:</b> opens the inmate EditView. It gets the case, CITIZEN_ID, SENTENCEMONTHS and the verdict date as parameters, because the case itself is not changed yet. The clerk picks SECURITYLEVEL and saves</li>
+      <li>On saving the inmate (onDBInsert), the case gets VERDICT = PRISON, VERDICTDATE, SENTENCEMONTHS and STATUS = SENTENCED. If the form is cancelled, nothing is saved and the case stays FILED</li>
     </ul>
   </div>
   <div class="note yellow">
@@ -303,11 +304,11 @@ flowchart LR
     <h3>ReleaseInmate_action</h3>
     <div class="where">On J_INMATE</div>
     <ul>
-      <li>Started manually by the clerk, there is no background job</li>
-      <li>Writes today's date to RELEASEDATE</li>
       <li>Allowed only for STATUS = IN_CUSTODY</li>
-      <li>Before PLANNEDRELEASEDATE: STATUS = RELEASED_EARLY, otherwise STATUS = RELEASED</li>
-      <li>Frees the cell (the cell validation counts only IN_CUSTODY) and sets the linked case from SENTENCED to CLOSED</li>
+      <li>Started manually by the clerk (no background job), after a confirmation question, because the release cannot be undone</li>
+      <li>Sets RELEASEDATE = today and STATUS = RELEASED_EARLY if today is before PLANNEDRELEASEDATE, otherwise RELEASED</li>
+      <li>Sets the linked case from SENTENCED to CLOSED</li>
+      <li>The cell is free again automatically, because the cell validation counts only IN_CUSTODY</li>
     </ul>
   </div>
 </div>
@@ -316,7 +317,7 @@ flowchart LR
 <div class="grid g2">
   <div class="note teal">
     <h3>remainingDays (No database column needed!)</h3>
-    <div class="where">On J_INMATE, SQL expression, read-only, shown while STATUS = IN_CUSTODY</div>
+    <div class="where">On J_INMATE, SQL expression (MariaDB), read-only, shown while STATUS = IN_CUSTODY</div>
 <pre>GREATEST(DATEDIFF(J_INMATE.PLANNEDRELEASEDATE, CURRENT_DATE), 0)</pre>
     <p style="margin-top:10px">Example: admission 2026-09-01, 6 months → planned release 2027-03-01. On 2026-10-12 the view shows <b>140 days</b>.</p>
   </div>
