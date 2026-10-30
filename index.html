@@ -187,7 +187,7 @@ flowchart LR
     <div class="row"><div class="key empty"></div><div class="fld">RELEASEDATE</div><div class="typ">DATE</div></div>
     <div class="row"><div class="key"><span class="m">💣</span></div><div class="fld">STATUS</div><div class="typ">VARCHAR(36)</div></div>
     <div class="row"><div class="key empty"></div><div class="fld">Audit fields<small>DATE_NEW, DATE_EDIT, USER_NEW, USER_EDIT</small></div><div class="typ">standard</div></div>
-    <p class="hint">One row = one imprisonment, at most one per court case. The row is created only through PronounceVerdict_action, which opens the EditView prefilled (no "New" button anywhere) · an inmate is shown as citizen name + CASENUMBER of its court case · CITIZEN_ID is taken over from the court case and read-only · CELL is picked from a dropdown <code>001</code>–<code>100</code> and suggested automatically (see "CELL suggestion" below) · ADMISSIONDATE defaults to today, not before the day of VERDICTDATE (compare days only, VERDICTDATE also has a time) · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS of the case, read-only · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY · STATUS, RELEASEDATE and JOB_ID are set only by the actions (read-only in the EditView) · once STATUS is RELEASED or RELEASED_EARLY, the whole record is read-only.</p>
+    <p class="hint">One row = one imprisonment, at most one per court case. The row is created only through Imprison_action, which opens the EditView prefilled (no "New" button anywhere) · an inmate is shown as citizen name + CASENUMBER of its court case · CITIZEN_ID is taken over from the court case and read-only · CELL is picked from a dropdown <code>001</code>–<code>100</code> and suggested automatically (see "CELL suggestion" below) · ADMISSIONDATE defaults to today and can't be in the past, since the verdict is pronounced when the inmate is saved · SENTENCEMONTHS is entered in the EditView (entity field without its own column on J_INMATE) and written to the case on save · PLANNEDRELEASEDATE = ADMISSIONDATE + SENTENCEMONTHS, read-only · SECURITYLEVEL → Keyword SecurityLevel, defaults to MEDIUM · STATUS → Keyword InmateStatus, defaults to IN_CUSTODY · STATUS and RELEASEDATE are set only by the actions (read-only in the EditView) · JOB_ID is a lookup in the EditView showing only open jobs of the Jobs module, empty = no job, read-only while SECURITYLEVEL = HIGH · once STATUS is RELEASED or RELEASED_EARLY, the whole record is read-only.</p>
   </div>
 </div>
 
@@ -256,7 +256,7 @@ flowchart LR
     <ul>
       <li>A citizen can be IN_CUSTODY only once at a time.</li>
       <li>Error if another J_INMATE row of the same citizen has STATUS = IN_CUSTODY.</li>
-      <li>Only relevant for a new inmate, because CITIZEN_ID is read-only afterwards. PronounceVerdict_action already blocks this; the validation is the safety net, e.g. when two cases of the same citizen get a PRISON verdict at the same time.</li>
+      <li>Only relevant for a new inmate, because CITIZEN_ID is read-only afterwards. Imprison_action already blocks this; the validation is the safety net, e.g. when two cases of the same citizen get a PRISON verdict at the same time.</li>
       <li>Message: "{CITIZEN} is already in custody (case {CASENUMBER})."</li>
     </ul>
   </div>
@@ -280,24 +280,23 @@ flowchart LR
 <h2>Actions</h2>
 <div class="grid g2">
   <div class="note yellow">
-    <h3>PronounceVerdict_action <span class="tag">links Gericht → Gefängnis</span></h3>
-    <div class="where">On J_COURTCASE</div>
+    <h3>PronounceVerdict_action</h3>
+    <div class="where">On J_COURTCASE · for ACQUITTAL, FINE, PROBATION</div>
     <ul>
       <li>Allowed only while STATUS = FILED</li>
-      <li>Dialog: pick VERDICT (choices depend on CASETYPE). FINE also asks for FINEAMOUNT, PRISON for SENTENCEMONTHS</li>
-      <li><b>ACQUITTAL, FINE, PROBATION:</b> saves VERDICT, VERDICTDATE = now (and FINEAMOUNT for FINE) and sets STATUS = CLOSED</li>
-      <li><b>PRISON, citizen already in custody:</b> error, the case stays FILED. The verdict can be pronounced after the release</li>
-      <li><b>PRISON, otherwise:</b> opens the inmate EditView. It gets the case, CITIZEN_ID, SENTENCEMONTHS and the verdict date as parameters, because the case itself is not changed yet. The clerk picks SECURITYLEVEL and saves</li>
-      <li>On saving the inmate (onDBInsert), the case gets VERDICT = PRISON, VERDICTDATE, SENTENCEMONTHS and STATUS = SENTENCED. If the form is cancelled, nothing is saved and the case stays FILED</li>
+      <li>Opens the small helper context J_PronounceVerdict (EditView, new record) with the case as parameter. An action can't show input fields itself</li>
+      <li>There the clerk picks VERDICT (CRIMINAL: all three, ADMINISTRATIVE: ACQUITTAL or FINE) and, for FINE, enters FINEAMOUNT</li>
+      <li>On save, the helper writes VERDICT, VERDICTDATE = now, FINEAMOUNT (FINE only) and STATUS = CLOSED to the case. Cancel changes nothing</li>
     </ul>
   </div>
   <div class="note yellow">
-    <h3>AssignJob_action <span class="tag">links Gefängnis → Jobs</span></h3>
-    <div class="where">On J_INMATE</div>
+    <h3>Imprison_action <span class="tag">links Gericht → Gefängnis</span></h3>
+    <div class="where">On J_COURTCASE · for PRISON</div>
     <ul>
-      <li>Allowed only for STATUS = IN_CUSTODY and SECURITYLEVEL ≠ HIGH</li>
-      <li>Lookup shows only open jobs of the Jobs module</li>
-      <li>Writes the selected job to JOB_ID; an empty selection removes the job</li>
+      <li>Allowed only while STATUS = FILED and CASETYPE = CRIMINAL</li>
+      <li>If the citizen is already in custody: message, nothing opens. The case stays FILED until the release</li>
+      <li>Otherwise opens the J_INMATE EditView (new record) with the case and CITIZEN_ID as parameters. The clerk enters SENTENCEMONTHS, picks SECURITYLEVEL and saves</li>
+      <li>On saving the inmate (onDBInsert), the case gets VERDICT = PRISON, VERDICTDATE = now, SENTENCEMONTHS and STATUS = SENTENCED. Cancel changes nothing</li>
     </ul>
   </div>
   <div class="note yellow">
@@ -378,7 +377,7 @@ flowchart LR
 </p>
 
 <footer>
-  Concept covers: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, PronounceVerdict_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · features · 2 validations · 1 calculated display value · 6 keyword categories.
+  Concept covers: 2 contexts (Court, Prison) · contexts connected (J_INMATE.J_COURTCASE_ID, Imprison_action) · Justice connected to every other module (Bürger, Finanzen, Jobs, Beschwerdemanagement) · 3 actions · features · 2 validations · 1 calculated display value · 6 keyword categories.
 </footer>
 </div>
 <script type="module">
